@@ -1,0 +1,124 @@
+// This is your Prisma schema file for MongoDB
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ===== BELIEVER MODEL =====
+model Believer {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Thông tin cơ bản
+  fullName           String
+  fullNameNormalized String   // lowercase, no diacritics for search
+  dateOfBirth        DateTime?
+  gender             Gender?
+  
+  // Thuộc địa bàn
+  xaDao              String?
+  hoDao              String?
+  
+  // Mốc đạo
+  ngayNhapMon        DateTime?
+  ngayTamThanh       DateTime?
+  
+  // Tu tập
+  traiKy             TraiKy?
+  tuChan             TuChan?
+  
+  // Gia đình & hậu sự
+  fatherName         String?
+  motherName         String?
+  ngayCungCuu        DateTime?
+  
+  // Khác
+  note               String?
+  
+  // Timestamps
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  // Relations
+  rankAssignments    RankAssignment[]
+  
+  @@index([fullNameNormalized])
+  @@index([hoDao])
+  @@index([xaDao])
+  @@index([gender])
+  @@index([traiKy])
+  @@index([tuChan])
+  @@index([createdAt])
+}
+
+// ===== RANK MODEL (Danh mục phẩm vị) =====
+model Rank {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  group       RankGroup    // CUU_TRUNG_DAI, PHUOC_THIEN, HIEP_THIEN_DAI
+  code        String       @unique
+  displayName String
+  order       Int          // thứ tự hiển thị trong group
+  isActive    Boolean      @default(true)
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  assignments RankAssignment[]
+  
+  @@index([group, order])
+  @@index([isActive])
+}
+
+// ===== RANK ASSIGNMENT (Lịch sử phong/cấp phẩm vị) =====
+model RankAssignment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  believerId String   @db.ObjectId
+  believer   Believer @relation(fields: [believerId], references: [id], onDelete: Cascade)
+  
+  rankId     String   @db.ObjectId
+  rank       Rank     @relation(fields: [rankId], references: [id])
+  
+  // Quyết định
+  decisionNumber  String
+  decisionDate    DateTime?
+  decisionNote    String?
+  decisionFileUrl String?
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@index([believerId])
+  @@index([rankId])
+  @@index([decisionDate])
+}
+
+// ===== ENUMS =====
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum TraiKy {
+  SIX_DAYS      // 6 ngày
+  TEN_DAYS      // 10 ngày
+  SIXTEEN_DAYS  // 16 ngày
+  FULL          // Trường
+}
+
+enum TuChan {
+  LINH      // Linh
+  TAM       // Tâm
+  TAM_THOI  // Tạm
+}
+
+enum RankGroup {
+  CUU_TRUNG_DAI    // Cửu Trùng Đài
+  PHUOC_THIEN      // Phước Thiện
+  HIEP_THIEN_DAI   // Hiệp Thiên Đài
+}
