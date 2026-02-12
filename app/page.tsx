@@ -1,103 +1,135 @@
+"use client";
+
 import Link from "next/link";
-import { Card, CardContent, CardTitle } from "@/components/ui/Card";
+import { useEffect, useState } from "react";
 
-export default function Home() {
-  const features = [
-    {
-      title: "Danh sách Tín Đồ",
-      description: "Xem, tìm kiếm và lọc danh sách tín đồ với giao diện trực quan",
-      href: "/believers",
-      color: "from-blue-500 to-purple-500",
-    },
-    {
-      title: "Thêm Tín Đồ",
-      description: "Đăng ký thông tin tín đồ mới với kiểm tra trùng lặp thông minh",
-      href: "/believers/new",
-      color: "from-green-500 to-teal-500",
-    },
-    {
-      title: "Quản lý Phẩm Vị",
-      description: "Quản lý danh mục phẩm vị và cơ cấu tổ chức đạo",
-      href: "/ranks",
-      color: "from-orange-500 to-pink-500",
-    },
-  ];
+export default function HomePage() {
+  const [stats, setStats] = useState({
+    believers: 0,
+    ranks: 0,
+  });
 
-  const capabilities = [
-    {
-      title: "Quản lý đầy đủ thông tin",
-      description: "Cơ bản, địa bàn, mốc đạo, tu tập, gia đình",
-    },
-    {
-      title: "Cảnh báo trùng lặp",
-      description: "Phát hiện thông minh khi nhập dữ liệu mới",
-    },
-    {
-      title: "Tìm kiếm mạnh mẽ",
-      description: "Lọc và sắp xếp linh hoạt theo nhiều tiêu chí",
-    },
-    {
-      title: "Xuất báo cáo",
-      description: "Xuất danh sách ra file CSV dễ dàng",
-    },
-    {
-      title: "Lịch sử phong cấp",
-      description: "Theo dõi quá trình phong phẩm vị",
-    },
-    {
-      title: "Giao diện hiện đại",
-      description: "Thiết kế đẹp mắt, dễ sử dụng",
-    },
-  ];
+  useEffect(() => {
+    // Fetch statistics
+    Promise.all([
+      fetch("/api/believers").then((res) => res.json()),
+      fetch("/api/ranks").then((res) => res.json()),
+    ])
+      .then(([believers, ranks]) => {
+        setStats({
+          believers: believers.length || 0,
+          ranks: ranks.length || 0,
+        });
+      })
+      .catch((error) => console.error("Error fetching stats:", error));
+  }, []);
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-[calc(100vh-80px)] bg-white">
       {/* Hero Section */}
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
-          Hệ thống Quản lý Tín Đồ Cao Đài
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Quản lý thông tin tín đồ, phẩm vị và các hoạt động tu tập một cách hiện đại và hiệu quả
-        </p>
-      </div>
-
-      {/* Feature Cards */}
-      <div className="grid md:grid-cols-3 gap-6 mb-12">
-        {features.map((feature) => (
-          <Card key={feature.href} href={feature.href} hover className="group">
-            <CardContent className="p-6">
-              <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.color} mb-4`}></div>
-              <CardTitle className="mb-3">{feature.title}</CardTitle>
-              <p className="text-gray-600 mb-4 text-sm">{feature.description}</p>
-              <span className="text-purple-600 font-semibold inline-flex items-center text-sm">
-                Xem chi tiết
-                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Capabilities Section */}
-      <Card>
-        <CardContent className="p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Tính năng nổi bật</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {capabilities.map((item, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-purple-600 mt-2 flex-shrink-0"></div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1 text-sm">{item.title}</h3>
-                  <p className="text-xs text-gray-600">{item.description}</p>
-                </div>
-              </div>
-            ))}
+      <section className="border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-20">
+          <div className="text-center space-y-6">
+            <h1 className="text-6xl font-bold text-black tracking-tight">
+              Hệ Thống Quản Lý
+            </h1>
+            <p className="text-2xl text-gray-600 max-w-2xl mx-auto">
+              Ứng dụng quản lý tín đồ Cao Đài
+            </p>
+            <div className="flex gap-4 justify-center pt-6">
+              <Link
+                href="/believers"
+                className="px-8 py-4 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Xem Danh Sách Tín Đồ
+              </Link>
+              <Link
+                href="/believers/new"
+                className="px-8 py-4 bg-white text-black font-medium rounded-lg border-2 border-black hover:bg-black hover:text-white transition-all duration-200"
+              >
+                Thêm Tín Đồ Mới
+              </Link>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-8 border-2 border-black rounded-lg hover:shadow-xl transition-shadow duration-200">
+              <div className="text-5xl font-bold text-black mb-2">
+                {stats.believers}
+              </div>
+              <div className="text-xl text-gray-600 uppercase tracking-wide">
+                Tín Đồ
+              </div>
+              <Link
+                href="/believers"
+                className="inline-block mt-4 text-black hover:underline font-medium"
+              >
+                Xem chi tiết →
+              </Link>
+            </div>
+            <div className="p-8 border-2 border-black rounded-lg hover:shadow-xl transition-shadow duration-200">
+              <div className="text-5xl font-bold text-black mb-2">
+                {stats.ranks}
+              </div>
+              <div className="text-xl text-gray-600 uppercase tracking-wide">
+                Phẩm Vị
+              </div>
+              <Link
+                href="/ranks"
+                className="inline-block mt-4 text-black hover:underline font-medium"
+              >
+                Xem chi tiết →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section>
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <h2 className="text-3xl font-bold text-black mb-12 text-center">
+            Tính Năng Chính
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="p-6 border border-gray-300 rounded-lg hover:border-black transition-colors duration-200">
+              <div className="text-4xl mb-4">📋</div>
+              <h3 className="text-xl font-bold text-black mb-2">
+                Quản Lý Tín Đồ
+              </h3>
+              <p className="text-gray-600">
+                Theo dõi thông tin chi tiết của từng tín đồ, bao gồm thánh danh,
+                phẩm vị, và thông tin liên hệ.
+              </p>
+            </div>
+            <div className="p-6 border border-gray-300 rounded-lg hover:border-black transition-colors duration-200">
+              <div className="text-4xl mb-4">⭐</div>
+              <h3 className="text-xl font-bold text-black mb-2">
+                Quản Lý Phẩm Vị
+              </h3>
+              <p className="text-gray-600">
+                Quản lý hệ thống phẩm vị với đầy đủ thông tin về từng cấp bậc
+                và thứ bậc.
+              </p>
+            </div>
+            <div className="p-6 border border-gray-300 rounded-lg hover:border-black transition-colors duration-200">
+              <div className="text-4xl mb-4">📊</div>
+              <h3 className="text-xl font-bold text-black mb-2">
+                Báo Cáo & Thống Kê
+              </h3>
+              <p className="text-gray-600">
+                Xuất báo cáo và xem thống kê chi tiết về nhân sự và phân bổ phẩm
+                trật.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

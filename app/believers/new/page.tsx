@@ -1,430 +1,302 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-
-interface DuplicateCandidate {
-  id: string;
-  fullName: string;
-  dateOfBirth: string | null;
-  hoDao: string | null;
-  xaDao: string | null;
-  reason: string;
-  similarity: number;
-}
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function NewBelieverPage() {
   const router = useRouter();
+  const [ranks, setRanks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
-  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
-  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
-
   const [formData, setFormData] = useState({
-    fullName: '',
-    dateOfBirth: '',
-    gender: '',
-    xaDao: '',
-    hoDao: '',
-    ngayNhapMon: '',
-    ngayTamThanh: '',
-    traiKy: '',
-    tuChan: '',
-    fatherName: '',
-    motherName: '',
-    ngayCungCuu: '',
-    note: '',
+    fullName: "",
+    dateOfBirth: "",
+    phone: "",
+    email: "",
+    address: "",
+    rankId: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Check for duplicates when key fields change
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (formData.fullName.length >= 3) {
-        checkDuplicates();
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [formData.fullName, formData.dateOfBirth]);
+    fetchRanks();
+  }, []);
 
-  const checkDuplicates = async () => {
-    setCheckingDuplicates(true);
+  const fetchRanks = async () => {
     try {
-      const response = await fetch('/api/believers/duplicate-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          dateOfBirth: formData.dateOfBirth || null,
-          hoDao: formData.hoDao || null,
-          xaDao: formData.xaDao || null,
-          fatherName: formData.fatherName || null,
-          motherName: formData.motherName || null,
-        }),
-      });
-      
+      const response = await fetch("/api/ranks");
       const data = await response.json();
-      setDuplicates(data.candidates || []);
-      setShowDuplicateWarning(data.candidates?.length > 0);
+      setRanks(data.ranks || data);
     } catch (error) {
-      console.error('Error checking duplicates:', error);
-    } finally {
-      setCheckingDuplicates(false);
+      console.error("Error fetching ranks:", error);
     }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Vui lòng nhập họ tên";
+    }
+
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = "Vui lòng chọn ngày sinh";
+    }
+
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (formData.phone && !/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+      newErrors.phone = "Số điện thoại không hợp lệ";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (showDuplicateWarning && duplicates.length > 0) {
-      const confirmed = confirm(
-        `Tìm thấy ${duplicates.length} tín đồ có thể trùng lặp. Bạn có chắc chắn muốn tiếp tục tạo mới?`
-      );
-      if (!confirmed) return;
-    }
+
+    if (!validateForm()) return;
 
     setLoading(true);
+
     try {
-      const response = await fetch('/api/believers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Check for duplicates
+      const dupCheck = await fetch("/api/believers/duplicate-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
-          dateOfBirth: formData.dateOfBirth || null,
-          gender: formData.gender || null,
-          xaDao: formData.xaDao || null,
-          hoDao: formData.hoDao || null,
-          ngayNhapMon: formData.ngayNhapMon || null,
-          ngayTamThanh: formData.ngayTamThanh || null,
-          traiKy: formData.traiKy || null,
-          tuChan: formData.tuChan || null,
-          fatherName: formData.fatherName || null,
-          motherName: formData.motherName || null,
-          ngayCungCuu: formData.ngayCungCuu || null,
-          note: formData.note || null,
+          fullName: formData.fullName,
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Không thể tạo tín đồ');
+      const dupResult = await dupCheck.json();
+
+      if (dupResult.exists) {
+        if (
+          !confirm(
+            `Đã tồn tại tín đồ có thông tin tương tự:\n- Họ tên: ${dupResult.believer.fullName}\n\nBạn có chắc muốn tiếp tục thêm?`
+          )
+        ) {
+          setLoading(false);
+          return;
+        }
       }
 
-      const believer = await response.json();
-      alert('Tạo tín đồ thành công!');
-      router.push(`/believers/${believer.id}`);
-    } catch (error: any) {
-      alert(error.message || 'Có lỗi xảy ra');
+      // Create believer
+      const response = await fetch("/api/believers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert("Thêm tín đồ thành công!");
+        router.push(`/believers/${result.id}`);
+      } else {
+        const error = await response.json();
+        alert(error.error || "Có lỗi xảy ra khi thêm tín đồ!");
+      }
+    } catch (error) {
+      console.error("Error creating believer:", error);
+      alert("Có lỗi xảy ra!");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <Link href="/believers" className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium mb-4 transition">
-          <span>←</span>
-          <span>Quay lại danh sách</span>
-        </Link>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-          Thêm Tín Đồ Mới
-        </h1>
-        <p className="text-gray-600">Đăng ký thông tin tín đồ mới vào hệ thống</p>
-      </div>
-
-      {/* Duplicate Warning */}
-      {showDuplicateWarning && duplicates.length > 0 && (
-        <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-yellow-900 mb-3">
-            Phát hiện {duplicates.length} tín đồ có thể trùng lặp
-          </h3>
-          <div className="mt-3">
-            <ul className="space-y-2">
-              {duplicates.map((dup) => (
-                <li key={dup.id} className="flex items-start gap-2 p-3 bg-white rounded-lg">
-                  <div>
-                    <Link 
-                      href={`/believers/${dup.id}`}
-                      target="_blank"
-                      className="font-semibold text-yellow-900 hover:text-yellow-700 hover:underline"
-                    >
-                      {dup.fullName}
-                    </Link>
-                    <span className="text-yellow-700"> - {dup.reason}</span>
-                    {dup.hoDao && <span className="text-gray-600"> ({dup.hoDao})</span>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <button
-            onClick={() => setShowDuplicateWarning(false)}
-            className="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-semibold transition"
-          >
-            Tôi hiểu, vẫn tiếp tục tạo mới
-          </button>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6">
-        {/* Thông tin cơ bản */}
+    <div className="min-h-screen bg-white">
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        {/* Header */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
-            Thông tin cơ bản
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Họ và tên <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                name="fullName"
-                required
-                value={formData.fullName}
-                onChange={handleChange}
-                className="input-field"
-                placeholder="Nguyễn Văn A"
-              />
-              {checkingDuplicates && (
-                <p className="mt-2 text-xs text-purple-600 font-medium">
-                  Đang kiểm tra trùng lặp...
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ngày sinh
-              </label>
-              <input
-                type="date"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Giới tính
-              </label>
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="input-field"
-              >
-                <option value="">Chọn giới tính</option>
-                <option value="MALE">Nam</option>
-                <option value="FEMALE">Nữ</option>
-                <option value="OTHER">Khác</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Thuộc địa bàn */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
-            Thuộc địa bàn
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Xã Đạo
-              </label>
-              <input
-                type="text"
-                name="xaDao"
-                value={formData.xaDao}
-                onChange={handleChange}
-                className="input-field"
-                placeholder="Xã Đạo Tân Hội"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Họ Đạo
-              </label>
-              <input
-                type="text"
-                name="hoDao"
-                value={formData.hoDao}
-                onChange={handleChange}
-                className="input-field"
-                placeholder="Họ Đạo Thái Bình"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Mốc đạo */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
-            Mốc đạo
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ngày nhập môn
-              </label>
-              <input
-                type="date"
-                name="ngayNhapMon"
-                value={formData.ngayNhapMon}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ngày Tam Thanh
-              </label>
-              <input
-                type="date"
-                name="ngayTamThanh"
-                value={formData.ngayTamThanh}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Tu tập */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
-            Tu tập
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Trai Kỳ
-              </label>
-              <select
-                name="traiKy"
-                value={formData.traiKy}
-                onChange={handleChange}
-                className="input-field"
-              >
-                <option value="">Chọn trai kỳ</option>
-                <option value="SIX_DAYS">6 ngày</option>
-                <option value="TEN_DAYS">10 ngày</option>
-                <option value="SIXTEEN_DAYS">16 ngày</option>
-                <option value="FULL">Trường</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tu Chấn
-              </label>
-              <select
-                name="tuChan"
-                value={formData.tuChan}
-                onChange={handleChange}
-                className="input-field"
-              >
-                <option value="">Chọn tu chấn</option>
-                <option value="LINH">Linh</option>
-                <option value="TAM">Tâm</option>
-                <option value="TAM_THOI">Tạm</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Gia đình & hậu sự */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
-            Gia đình & Hậu sự
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tên cha
-              </label>
-              <input
-                type="text"
-                name="fatherName"
-                value={formData.fatherName}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tên mẹ
-              </label>
-              <input
-                type="text"
-                name="motherName"
-                value={formData.motherName}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ngày cúng cửu
-              </label>
-              <input
-                type="date"
-                name="ngayCungCuu"
-                value={formData.ngayCungCuu}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Ghi chú */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
-            Ghi chú
-          </h2>
-          <textarea
-            name="note"
-            value={formData.note}
-            onChange={handleChange}
-            rows={4}
-            className="input-field"
-            placeholder="Thông tin bổ sung..."
-          />
-        </div>
-
-        {/* Submit buttons */}
-        <div className="flex justify-end gap-3 pt-6 border-t">
           <Link
             href="/believers"
-            className="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700 transition"
+            className="inline-flex items-center text-gray-600 hover:text-black mb-4 transition-colors"
           >
-            Hủy
+            ← Quay lại danh sách
           </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-md transition disabled:opacity-50"
-          >
-            {loading ? 'Đang tạo...' : 'Tạo Tín Đồ'}
-          </button>
+          <h1 className="text-4xl font-bold text-black mb-2">
+            Thêm Tín Đồ Mới
+          </h1>
+          <p className="text-gray-600">Nhập thông tin tín đồ vào form bên dưới</p>
         </div>
-      </form>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          <div className="border-2 border-black rounded-lg p-8">
+            <div className="space-y-6">
+              {/* Holy Name & Full Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Họ Tên <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${
+                      errors.fullName
+                        ? "border-red-500 focus:border-red-600"
+                        : "border-gray-300 focus:border-black"
+                    }`}
+                    placeholder="Nhập họ tên đầy đủ"
+                  />
+                  {errors.fullName && (
+                    <p className="mt-2 text-sm text-red-600">{errors.fullName}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Date of Birth & Rank */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Ngày Sinh <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${
+                      errors.dateOfBirth
+                        ? "border-red-500 focus:border-red-600"
+                        : "border-gray-300 focus:border-black"
+                    }`}
+                  />
+                  {errors.dateOfBirth && (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.dateOfBirth}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Phẩm Vị
+                  </label>
+                  <select
+                    name="rankId"
+                    value={formData.rankId}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  >
+                    <option value="">Chọn phẩm vị</option>
+                    {ranks.map((rank) => (
+                      <option key={rank.id} value={rank.id}>
+                        {rank.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Phone & Email */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Số Điện Thoại
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${
+                      errors.phone
+                        ? "border-red-500 focus:border-red-600"
+                        : "border-gray-300 focus:border-black"
+                    }`}
+                    placeholder="0123456789"
+                  />
+                  {errors.phone && (
+                    <p className="mt-2 text-sm text-red-600">{errors.phone}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${
+                      errors.email
+                        ? "border-red-500 focus:border-red-600"
+                        : "border-gray-300 focus:border-black"
+                    }`}
+                    placeholder="email@example.com"
+                  />
+                  {errors.email && (
+                    <p className="mt-2 text-sm text-red-600">{errors.email}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-bold text-black mb-2">
+                  Địa Chỉ
+                </label>
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  placeholder="Nhập địa chỉ đầy đủ"
+                />
+              </div>
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="flex gap-3 mt-8 pt-6 border-t-2 border-gray-200">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-8 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Đang xử lý..." : "Thêm Tín Đồ"}
+              </button>
+              <Link
+                href="/believers"
+                className="px-8 py-3 bg-white border-2 border-gray-300 text-black rounded-lg hover:border-black transition-all duration-200 font-medium inline-flex items-center"
+              >
+                Hủy
+              </Link>
+            </div>
+          </div>
+        </form>
+
+        {/* Info Box */}
+        <div className="mt-6 p-4 border border-gray-300 rounded-lg bg-gray-50">
+          <p className="text-sm text-gray-600">
+            <span className="font-bold text-black">Lưu ý:</span> Các trường có dấu{" "}
+            <span className="text-red-600">*</span> là bắt buộc. Hệ thống sẽ kiểm
+            tra trùng lặp tín đồ trước khi thêm mới.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

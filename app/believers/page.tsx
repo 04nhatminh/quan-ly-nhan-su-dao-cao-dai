@@ -1,310 +1,250 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { formatDate, getGenderLabel, getTraiKyLabel, getTuChanLabel } from '@/lib/utils';
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface Believer {
   id: string;
+  holyName?: string;
   fullName: string;
-  dateOfBirth: string | null;
-  gender: string | null;
-  xaDao: string | null;
-  hoDao: string | null;
-  traiKy: string | null;
-  tuChan: string | null;
+  dateOfBirth: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  rank?: {
+    id: string;
+    name: string;
+    level: number;
+  };
   createdAt: string;
 }
 
-interface PaginationInfo {
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-}
-
-export default function BelieversListPage() {
+export default function BelieversPage() {
   const [believers, setBelievers] = useState<Believer[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    page: 1,
-    pageSize: 20,
-    total: 0,
-    totalPages: 0,
-  });
   const [loading, setLoading] = useState(true);
-  
-  // Filters
-  const [search, setSearch] = useState('');
-  const [gender, setGender] = useState('');
-  const [traiKy, setTraiKy] = useState('');
-  const [tuChan, setTuChan] = useState('');
-  const [hoDao, setHoDao] = useState('');
-  const [xaDao, setXaDao] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRank, setFilterRank] = useState("");
+  const [ranks, setRanks] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchBelievers();
+    fetchRanks();
+  }, []);
 
   const fetchBelievers = async () => {
-    setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        pageSize: pagination.pageSize.toString(),
-        sortBy,
-        sortOrder,
-      });
-      
-      if (search) params.append('search', search);
-      if (gender) params.append('gender', gender);
-      if (traiKy) params.append('traiKy', traiKy);
-      if (tuChan) params.append('tuChan', tuChan);
-      if (hoDao) params.append('hoDao', hoDao);
-      if (xaDao) params.append('xaDao', xaDao);
-      
-      const response = await fetch(`/api/believers?${params}`);
+      const response = await fetch("/api/believers");
       const data = await response.json();
-      
-      setBelievers(data.data);
-      setPagination(data.pagination);
+      setBelievers(data.data || []);
     } catch (error) {
-      console.error('Error fetching believers:', error);
-      alert('Không thể tải danh sách tín đồ');
+      console.error("Error fetching believers:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchBelievers();
-  }, [pagination.page, sortBy, sortOrder]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPagination(prev => ({ ...prev, page: 1 }));
-    fetchBelievers();
+  const fetchRanks = async () => {
+    try {
+      const response = await fetch("/api/ranks");
+      const data = await response.json();
+      setRanks(data.ranks || data);
+    } catch (error) {
+      console.error("Error fetching ranks:", error);
+    }
   };
 
-  const handleExport = () => {
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    if (gender) params.append('gender', gender);
-    if (traiKy) params.append('traiKy', traiKy);
-    if (tuChan) params.append('tuChan', tuChan);
-    if (hoDao) params.append('hoDao', hoDao);
-    if (xaDao) params.append('xaDao', xaDao);
-    
-    window.open(`/api/believers/export?${params}`, '_blank');
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa tín đồ này?")) return;
+
+    try {
+      const response = await fetch(`/api/believers/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setBelievers(believers.filter((b) => b.id !== id));
+        alert("Đã xóa tín đồ thành công!");
+      } else {
+        alert("Có lỗi xảy ra khi xóa tín đồ!");
+      }
+    } catch (error) {
+      console.error("Error deleting believer:", error);
+      alert("Có lỗi xảy ra!");
+    }
   };
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/believers/export");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `believers-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error exporting believers:", error);
+      alert("Có lỗi xảy ra khi xuất dữ liệu!");
+    }
+  };
+
+  const filteredBelievers = believers.filter((believer) => {
+    const matchesSearch =
+      (believer.holyName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (believer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (believer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (believer.phone?.includes(searchTerm) ?? false);
+
+    const matchesRank = !filterRank || believer.rank?.id === filterRank;
+
+    return matchesSearch && matchesRank;
+  });
+
+  if (!mounted || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl font-medium text-gray-600">Đang tải...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">Danh sách Tín Đồ</h1>
-            <p className="text-gray-600">Quản lý và tìm kiếm thông tin tín đồ</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white text-sm rounded-lg font-semibold hover:shadow-md transition-all"
-            >
-              Xuất CSV
-            </button>
-            <Link
-              href="/believers/new"
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg font-semibold hover:shadow-md transition-all"
-            >
-              Thêm Tín Đồ
-            </Link>
-          </div>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-black mb-2">Danh Sách Tín Đồ</h1>
+          <p className="text-gray-600">
+            Quản lý thông tin tín đồ Cao Đài
+          </p>
         </div>
-      </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Bộ lọc tìm kiếm</h2>
-        <form onSubmit={handleSearch}>
-          <div className="grid md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tìm kiếm theo tên
-              </label>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Nhập họ tên..."
-                className="input-field"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Họ Đạo
-              </label>
-              <input
-                type="text"
-                value={hoDao}
-                onChange={(e) => setHoDao(e.target.value)}
-                placeholder="Nhập họ đạo..."
-                className="input-field"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Xã Đạo
-              </label>
-              <input
-                type="text"
-                value={xaDao}
-                onChange={(e) => setXaDao(e.target.value)}
-                placeholder="Nhập xã đạo..."
-                className="input-field"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Giới tính
-              </label>
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className="input-field"
-              >
-                <option value="">Tất cả</option>
-                <option value="MALE">Nam</option>
-                <option value="FEMALE">Nữ</option>
-                <option value="OTHER">Khác</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Trai Kỳ
-              </label>
-              <select
-                value={traiKy}
-                onChange={(e) => setTraiKy(e.target.value)}
-                className="input-field"
-              >
-                <option value="">Tất cả</option>
-                <option value="SIX_DAYS">6 ngày</option>
-                <option value="TEN_DAYS">10 ngày</option>
-                <option value="SIXTEEN_DAYS">16 ngày</option>
-                <option value="FULL">Trường</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tu Chấn
-              </label>
-              <select
-                value={tuChan}
-                onChange={(e) => setTuChan(e.target.value)}
-                className="input-field"
-              >
-                <option value="">Tất cả</option>
-                <option value="LINH">Linh</option>
-                <option value="TAM">Tâm</option>
-                <option value="TAM_THOI">Tạm</option>
-              </select>
-            </div>
+        {/* Toolbar */}
+        <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex-1 min-w-[300px]">
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tên, thánh danh, email, SĐT..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+            />
           </div>
-          
-          <div className="flex justify-between items-center">
-            <button
-              type="submit"
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-md transition-all"
-            >
-              Tìm kiếm
-            </button>
-            
-            <div className="flex gap-2 items-center">
-              <span className="text-sm text-gray-600">Sắp xếp:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="createdAt">Ngày tạo</option>
-                <option value="fullName">Họ tên</option>
-                <option value="dateOfBirth">Ngày sinh</option>
-              </select>
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="asc">Tăng dần</option>
-                <option value="desc">Giảm dần</option>
-              </select>
-            </div>
-          </div>
-        </form>
-      </div>
+          <select
+            value={filterRank}
+            onChange={(e) => setFilterRank(e.target.value)}
+            className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+          >
+            <option value="">Tất cả phẩm vị</option>
+            {ranks.map((rank) => (
+              <option key={rank.id} value={rank.id}>
+                {rank.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleExport}
+            className="px-6 py-3 bg-white border-2 border-black text-black rounded-lg hover:bg-black hover:text-white transition-all duration-200 font-medium"
+          >
+            Xuất CSV
+          </button>
+          <Link
+            href="/believers/new"
+            className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
+          >
+            + Thêm Tín Đồ
+          </Link>
+        </div>
 
-      {/* Results */}
-      {loading ? (
-        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-purple-200 border-t-purple-600"></div>
-          <p className="mt-3 text-gray-600">Đang tải dữ liệu...</p>
+        {/* Stats */}
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <span className="text-gray-600">
+            Hiển thị <span className="font-bold text-black">{filteredBelievers.length}</span> / {believers.length} tín đồ
+          </span>
         </div>
-      ) : believers.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-          <p className="text-gray-500">Đang tải dữ liệu...</p>
-        </div>
-      ) : (
-        <>
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+
+        {/* Table */}
+        {filteredBelievers.length === 0 ? (
+          <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-lg">
+            <div className="text-5xl mb-4">👤</div>
+            <p className="text-xl text-gray-600">
+              {searchTerm || filterRank
+                ? "Không tìm thấy tín đồ nào"
+                : "Chưa có tín đồ nào"}
+            </p>
+            {!searchTerm && !filterRank && (
+              <Link
+                href="/believers/new"
+                className="inline-block mt-4 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
+              >
+                Thêm tín đồ đầu tiên
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="border-2 border-black rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-purple-50 to-blue-50 border-b-2 border-purple-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Họ và tên</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Ngày sinh</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Giới tính</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Họ Đạo</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Xã Đạo</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Trai Kỳ</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Tu Chấn</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Thao tác</th>
+                <thead>
+                  <tr className="bg-black text-white">
+                    <th className="px-6 py-4 text-left font-bold">Thánh Danh</th>
+                    <th className="px-6 py-4 text-left font-bold">Họ Tên</th>
+                    <th className="px-6 py-4 text-left font-bold">Phẩm Vị</th>
+                    <th className="px-6 py-4 text-left font-bold">Ngày Sinh</th>
+                    <th className="px-6 py-4 text-left font-bold">Liên Hệ</th>
+                    <th className="px-6 py-4 text-center font-bold">Thao Tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {believers.map((believer) => (
-                    <tr key={believer.id} className="hover:bg-purple-50/50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                        {believer.fullName}
+                <tbody>
+                  {filteredBelievers.map((believer, index) => (
+                    <tr
+                      key={believer.id}
+                      className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      }`}
+                    >
+                      <td className="px-6 py-4 font-medium text-black">
+                        {believer.holyName || believer.fullName}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {believer.dateOfBirth ? formatDate(believer.dateOfBirth) : '-'}
+                      <td className="px-6 py-4">{believer.fullName}</td>
+                      <td className="px-6 py-4">
+                        {believer.rank ? (
+                          <span className="px-3 py-1 bg-black text-white text-sm rounded-full">
+                            {believer.rank.name}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {believer.gender ? getGenderLabel(believer.gender as any) : '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {believer.hoDao || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {believer.xaDao || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {believer.traiKy ? getTraiKyLabel(believer.traiKy as any) : '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {believer.tuChan ? getTuChanLabel(believer.tuChan as any) : '-'}
+                      <td className="px-6 py-4 text-gray-600" suppressHydrationWarning>
+                        {new Date(believer.dateOfBirth).toLocaleDateString("vi-VN")}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <Link
-                          href={`/believers/${believer.id}`}
-                          className="inline-flex items-center gap-1 text-purple-600 hover:text-purple-800 font-semibold hover:gap-2 transition-all"
-                        >
-                          <span>Chi tiết</span>
-                          <span>→</span>
-                        </Link>
+                        <div className="text-gray-600">
+                          {believer.phone && <div>📞 {believer.phone}</div>}
+                          {believer.email && <div>📧 {believer.email}</div>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2 justify-center">
+                          <Link
+                            href={`/believers/${believer.id}`}
+                            className="px-4 py-2 bg-black text-white text-sm rounded hover:bg-gray-800 transition-colors"
+                          >
+                            Xem
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(believer.id)}
+                            className="px-4 py-2 bg-white border-2 border-black text-black text-sm rounded hover:bg-black hover:text-white transition-all duration-200"
+                          >
+                            Xóa
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -312,34 +252,8 @@ export default function BelieversListPage() {
               </table>
             </div>
           </div>
-
-          {/* Pagination */}
-          <div className="flex justify-between items-center pt-6 border-t">
-            <p className="text-sm font-medium text-gray-700">
-              Hiển thị {believers.length} trên tổng {pagination.total} tín đồ
-            </p>
-            <div className="flex gap-3 items-center">
-              <button
-                onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                disabled={pagination.page === 1}
-                className="px-5 py-2.5 border-2 border-purple-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50 hover:border-purple-300 transition-all font-semibold text-gray-700"
-              >
-                ← Trước
-              </button>
-              <span className="px-5 py-2.5 text-sm font-bold text-gray-700 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl">
-                Trang {pagination.page} / {pagination.totalPages}
-              </span>
-              <button
-                onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                disabled={pagination.page >= pagination.totalPages}
-                className="px-5 py-2.5 border-2 border-purple-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50 hover:border-purple-300 transition-all font-semibold text-gray-700"
-              >
-                Sau →
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

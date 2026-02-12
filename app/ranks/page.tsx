@@ -1,344 +1,310 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { getRankGroupLabel } from '@/lib/utils';
+import { useEffect, useState } from "react";
 
 interface Rank {
   id: string;
-  group: string;
-  code: string;
-  displayName: string;
-  order: number;
-  isActive: boolean;
-}
-
-interface GroupedRanks {
-  CUU_TRUNG_DAI: Rank[];
-  PHUOC_THIEN: Rank[];
-  HIEP_THIEN_DAI: Rank[];
+  name: string;
+  level: number;
+  description?: string;
+  _count?: {
+    believers: number;
+  };
 }
 
 export default function RanksPage() {
   const [ranks, setRanks] = useState<Rank[]>([]);
-  const [grouped, setGrouped] = useState<GroupedRanks | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showInactive, setShowInactive] = useState(false);
-
-  // Form state for creating new rank
-  const [showForm, setShowForm] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
-    group: '',
-    code: '',
-    displayName: '',
-    order: 1,
+    name: "",
+    level: 1,
+    description: "",
   });
 
+  useEffect(() => {
+    setMounted(true);
+    fetchRanks();
+  }, []);
+
   const fetchRanks = async () => {
-    setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (showInactive) params.append('includeInactive', 'true');
-      
-      const response = await fetch(`/api/ranks?${params}`);
+      const response = await fetch("/api/ranks");
       const data = await response.json();
-      
-      setRanks(data.ranks);
-      setGrouped(data.grouped);
+      setRanks((data.ranks || data).sort((a: Rank, b: Rank) => a.level - b.level));
     } catch (error) {
-      console.error('Error fetching ranks:', error);
-      alert('Không thể tải danh sách phẩm vị');
+      console.error("Error fetching ranks:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchRanks();
-  }, [showInactive]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!formData.name.trim()) {
+      alert("Vui lòng nhập tên phẩm vị!");
+      return;
+    }
+
     try {
-      const response = await fetch('/api/ranks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const url = editingId ? `/api/ranks/${editingId}` : "/api/ranks";
+      const method = editingId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        await fetchRanks();
+        resetForm();
+        alert(editingId ? "Cập nhật thành công!" : "Thêm phẩm vị thành công!");
+      } else {
         const error = await response.json();
-        throw new Error(error.error || 'Không thể tạo phẩm vị');
+        alert(error.error || "Có lỗi xảy ra!");
       }
-
-      alert('Tạo phẩm vị thành công!');
-      setShowForm(false);
-      setFormData({ group: '', code: '', displayName: '', order: 1 });
-      fetchRanks();
-    } catch (error: any) {
-      alert(error.message || 'Có lỗi xảy ra');
+    } catch (error) {
+      console.error("Error saving rank:", error);
+      alert("Có lỗi xảy ra!");
     }
   };
 
-  const handleToggleActive = async (rankId: string, currentStatus: boolean) => {
+  const handleEdit = (rank: Rank) => {
+    setEditingId(rank.id);
+    setFormData({
+      name: rank.name,
+      level: rank.level,
+      description: rank.description || "",
+    });
+    setIsAdding(true);
+  };
+
+  const handleDelete = async (id: string, name: string, believersCount: number) => {
+    if (believersCount > 0) {
+      alert(
+        `Không thể xóa phẩm vị "${name}" vì còn ${believersCount} tín đồ đang sử dụng!`
+      );
+      return;
+    }
+
+    if (!confirm(`Bạn có chắc chắn muốn xóa phẩm vị "${name}"?`)) return;
+
     try {
-      const response = await fetch(`/api/ranks/${rankId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !currentStatus }),
+      const response = await fetch(`/api/ranks/${id}`, {
+        method: "DELETE",
       });
 
-      if (!response.ok) {
-        throw new Error('Không thể cập nhật');
+      if (response.ok) {
+        await fetchRanks();
+        alert("Xóa phẩm vị thành công!");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Có lỗi xảy ra!");
       }
-
-      fetchRanks();
     } catch (error) {
-      alert('Có lỗi xảy ra');
+      console.error("Error deleting rank:", error);
+      alert("Có lỗi xảy ra!");
     }
   };
 
+  const resetForm = () => {
+    setFormData({ name: "", level: 1, description: "" });
+    setIsAdding(false);
+    setEditingId(null);
+  };
+
+  if (!mounted || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl font-medium text-gray-600">Đang tải...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">Quản lý Phẩm Vị</h1>
-            <p className="text-gray-600">Quản lý danh mục phẩm vị và cơ cấu tổ chức</p>
-          </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg font-semibold hover:shadow-md transition"
-          >
-            {showForm ? 'Đóng' : 'Thêm Phẩm Vị'}
-          </button>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-black mb-2">Quản Lý Phẩm Vị</h1>
+          <p className="text-gray-600">
+            Quản lý hệ thống phẩm vị Cao Đài
+          </p>
         </div>
-      </div>
 
-      {/* Create Form */}
-      {showForm && (
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Thêm Phẩm Vị Mới</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nhóm phẩm vị <span className="text-red-600">*</span>
-                </label>
-                <select
-                  required
-                  value={formData.group}
-                  onChange={(e) => setFormData({ ...formData, group: e.target.value })}
-                  className="input-field"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Ranks List */}
+          <div className="lg:col-span-2">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-black">
+                Danh Sách Phẩm Vị ({ranks.length})
+              </h2>
+              {!isAdding && (
+                <button
+                  onClick={() => setIsAdding(true)}
+                  className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
                 >
-                  <option value="">Chọn nhóm</option>
-                  <option value="CUU_TRUNG_DAI">Cửu Trùng Đài</option>
-                  <option value="PHUOC_THIEN">Phước Thiện</option>
-                  <option value="HIEP_THIEN_DAI">Hiệp Thiên Đài</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mã phẩm vị <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  placeholder="VD: GIAO_SU"
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên hiển thị <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.displayName}
-                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  placeholder="VD: Giáo Sư"
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thứ tự <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={formData.order}
-                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-                  className="input-field"
-                />
-              </div>
+                  + Thêm Phẩm Vị
+                </button>
+              )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700 transition"
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-md transition"
-              >
-                Tạo Phẩm Vị
-              </button>
-            </div>
-          </form>
+            {ranks.length === 0 ? (
+              <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="text-5xl mb-4">⭐</div>
+                <p className="text-xl text-gray-600 mb-4">Chưa có phẩm vị nào</p>
+                <button
+                  onClick={() => setIsAdding(true)}
+                  className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
+                >
+                  Thêm phẩm vị đầu tiên
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {ranks.map((rank) => (
+                  <div
+                    key={rank.id}
+                    className="border-2 border-black rounded-lg p-6 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="px-3 py-1 bg-black text-white text-sm font-bold rounded">
+                            Cấp {rank.level}
+                          </div>
+                          <h3 className="text-2xl font-bold text-black">
+                            {rank.name}
+                          </h3>
+                        </div>
+                        {rank.description && (
+                          <p className="text-gray-600 mb-3">{rank.description}</p>
+                        )}
+                        <div className="text-sm text-gray-500">
+                          <span className="font-bold text-black">
+                            {rank._count?.believers || 0}
+                          </span>{" "}
+                          tín đồ
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(rank)}
+                          className="px-4 py-2 bg-black text-white text-sm rounded hover:bg-gray-800 transition-colors"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleDelete(
+                              rank.id,
+                              rank.name,
+                              rank._count?.believers || 0
+                            )
+                          }
+                          className="px-4 py-2 bg-white border-2 border-black text-black text-sm rounded hover:bg-black hover:text-white transition-all duration-200"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Add/Edit Form */}
+          <div className="lg:col-span-1">
+            {isAdding && (
+              <div className="sticky top-24">
+                <div className="border-2 border-black rounded-lg p-6">
+                  <h3 className="text-xl font-bold text-black mb-6">
+                    {editingId ? "Chỉnh Sửa Phẩm Vị" : "Thêm Phẩm Vị Mới"}
+                  </h3>
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-bold text-black mb-2">
+                        Tên Phẩm Vị *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                        placeholder="Vd: Giáo Sư"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-black mb-2">
+                        Cấp Độ *
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.level}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            level: parseInt(e.target.value),
+                          })
+                        }
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-black mb-2">
+                        Mô Tả
+                      </label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) =>
+                          setFormData({ ...formData, description: e.target.value })
+                        }
+                        rows={3}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                        placeholder="Mô tả về phẩm vị..."
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-2">
+                      <button
+                        type="submit"
+                        className="w-full px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
+                      >
+                        {editingId ? "Cập Nhật" : "Thêm Phẩm Vị"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetForm}
+                        className="w-full px-6 py-3 bg-white border-2 border-gray-300 text-black rounded-lg hover:border-black transition-all duration-200 font-medium"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="mt-4 p-4 border border-gray-300 rounded-lg bg-gray-50">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-bold text-black">Lưu ý:</span> Không thể
+                    xóa phẩm vị đang được sử dụng bởi tín đồ.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      )}
-
-      {/* Show/Hide Inactive Toggle */}
-      <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showInactive}
-            onChange={(e) => setShowInactive(e.target.checked)}
-            className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-          />
-          <span className="text-sm font-medium text-gray-700">Hiển thị phẩm vị đã vô hiệu hóa</span>
-        </label>
       </div>
-
-      {/* Ranks List */}
-      {loading ? (
-        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-purple-200 border-t-purple-600"></div>
-          <p className="mt-3 text-gray-600">Đang tải dữ liệu...</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Cửu Trùng Đài */}
-          {grouped?.CUU_TRUNG_DAI && grouped.CUU_TRUNG_DAI.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {getRankGroupLabel('CUU_TRUNG_DAI')}
-              </h2>
-              <div className="space-y-2">
-                {grouped.CUU_TRUNG_DAI.map((rank) => (
-                  <div
-                    key={rank.id}
-                    className={`flex justify-between items-center p-3 rounded-lg border ${
-                      rank.isActive ? 'bg-white' : 'bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="text-gray-500 text-sm w-6">{rank.order}</span>
-                        <div>
-                          <p className="font-medium text-gray-900">{rank.displayName}</p>
-                          <p className="text-xs text-gray-500">{rank.code}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleToggleActive(rank.id, rank.isActive)}
-                      className={`px-3 py-1 text-xs rounded ${
-                        rank.isActive
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
-                    >
-                      {rank.isActive ? 'Hoạt động' : 'Đã vô hiệu'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Phước Thiện */}
-          {grouped?.PHUOC_THIEN && grouped.PHUOC_THIEN.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {getRankGroupLabel('PHUOC_THIEN')}
-              </h2>
-              <div className="space-y-2">
-                {grouped.PHUOC_THIEN.map((rank) => (
-                  <div
-                    key={rank.id}
-                    className={`flex justify-between items-center p-4 rounded-lg border transition ${
-                      rank.isActive ? 'bg-gradient-to-r from-green-50 to-teal-50 border-green-200' : 'bg-gray-50 border-gray-300'
-                    }`}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-green-600 w-6">{rank.order}</span>
-                        <div>
-                          <p className="font-bold text-gray-900">{rank.displayName}</p>
-                          <p className="text-xs text-gray-500 font-mono">{rank.code}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleToggleActive(rank.id, rank.isActive)}
-                      className={`px-3 py-1 text-xs font-semibold rounded transition ${
-                        rank.isActive
-                          ? 'bg-green-500 text-white hover:bg-green-600'
-                          : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
-                      }`}
-                    >
-                      {rank.isActive ? 'Hoạt động' : 'Đã vô hiệu'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Hiệp Thiên Đài */}
-          {grouped?.HIEP_THIEN_DAI && grouped.HIEP_THIEN_DAI.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {getRankGroupLabel('HIEP_THIEN_DAI')}
-              </h2>
-              <div className="space-y-2">
-                {grouped.HIEP_THIEN_DAI.map((rank) => (
-                  <div
-                    key={rank.id}
-                    className={`flex justify-between items-center p-4 rounded-lg border transition ${
-                      rank.isActive ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200' : 'bg-gray-50 border-gray-300'
-                    }`}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-orange-600 w-6">{rank.order}</span>
-                        <div>
-                          <p className="font-bold text-gray-900">{rank.displayName}</p>
-                          <p className="text-xs text-gray-500 font-mono">{rank.code}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleToggleActive(rank.id, rank.isActive)}
-                      className={`px-3 py-1 text-xs font-semibold rounded transition ${
-                        rank.isActive
-                          ? 'bg-green-500 text-white hover:bg-green-600'
-                          : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
-                      }`}
-                    >
-                      {rank.isActive ? 'Hoạt động' : 'Đã vô hiệu'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
