@@ -129,12 +129,12 @@ export default function NewBelieverPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="card-elevated p-8 mb-8">
-        <Link href="/believers" className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-semibold mb-4 hover:gap-3 transition-all">
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <Link href="/believers" className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium mb-4 transition">
           <span>←</span>
           <span>Quay lại danh sách</span>
         </Link>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
           Thêm Tín Đồ Mới
         </h1>
         <p className="text-gray-600">Đăng ký thông tin tín đồ mới vào hệ thống</p>
@@ -142,55 +142,44 @@ export default function NewBelieverPage() {
 
       {/* Duplicate Warning */}
       {showDuplicateWarning && duplicates.length > 0 && (
-        <div className="mb-8 card-elevated p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500">
-          <div className="flex gap-4">
-            <div className="flex-shrink-0">
-              <span className="text-4xl">⚠️</span>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-yellow-900 mb-2">
-                🔍 Phát hiện {duplicates.length} tín đồ có thể trùng lặp
-              </h3>
-              <div className="mt-3 text-sm">
-                <ul className="space-y-2">
-                  {duplicates.map((dup) => (
-                    <li key={dup.id} className="flex items-start gap-2 p-3 bg-white/60 rounded-lg">
-                      <span className="text-xl">👤</span>
-                      <div>
-                        <Link 
-                          href={`/believers/${dup.id}`}
-                          target="_blank"
-                          className="font-semibold text-yellow-900 hover:text-yellow-700 hover:underline"
-                        >
-                          {dup.fullName}
-                        </Link>
-                        <span className="text-yellow-700"> - {dup.reason}</span>
-                        {dup.hoDao && <span className="text-gray-600"> ({dup.hoDao})</span>}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <button
-                onClick={() => setShowDuplicateWarning(false)}
-                className="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-semibold transition-all"
-              >
-                Tôi hiểu, vẫn tiếp tục tạo mới
-              </button>
-            </div>
+        <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-yellow-900 mb-3">
+            Phát hiện {duplicates.length} tín đồ có thể trùng lặp
+          </h3>
+          <div className="mt-3">
+            <ul className="space-y-2">
+              {duplicates.map((dup) => (
+                <li key={dup.id} className="flex items-start gap-2 p-3 bg-white rounded-lg">
+                  <div>
+                    <Link 
+                      href={`/believers/${dup.id}`}
+                      target="_blank"
+                      className="font-semibold text-yellow-900 hover:text-yellow-700 hover:underline"
+                    >
+                      {dup.fullName}
+                    </Link>
+                    <span className="text-yellow-700"> - {dup.reason}</span>
+                    {dup.hoDao && <span className="text-gray-600"> ({dup.hoDao})</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
+          <button
+            onClick={() => setShowDuplicateWarning(false)}
+            className="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-semibold transition"
+          >
+            Tôi hiểu, vẫn tiếp tục tạo mới
+          </button>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="card-elevated p-8">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6">
         {/* Thông tin cơ bản */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">📝</span>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Thông tin cơ bản
-            </h2>
-          </div>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
+            Thông tin cơ bản
+          </h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -206,9 +195,8 @@ export default function NewBelieverPage() {
                 placeholder="Nguyễn Văn A"
               />
               {checkingDuplicates && (
-                <p className="mt-2 text-xs text-purple-600 font-semibold flex items-center gap-2">
-                  <span className="animate-spin">🔄</span>
-                  <span>Đang kiểm tra trùng lặp...</span>
+                <p className="mt-2 text-xs text-purple-600 font-medium">
+                  Đang kiểm tra trùng lặp...
                 </p>
               )}
             </div>
@@ -246,13 +234,10 @@ export default function NewBelieverPage() {
         </div>
 
         {/* Thuộc địa bàn */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">🗺️</span>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Thuộc địa bàn
-            </h2>
-          </div>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
+            Thuộc địa bàn
+          </h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -285,13 +270,10 @@ export default function NewBelieverPage() {
         </div>
 
         {/* Mốc đạo */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">📅</span>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Mốc đạo
-            </h2>
-          </div>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
+            Mốc đạo
+          </h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -322,13 +304,10 @@ export default function NewBelieverPage() {
         </div>
 
         {/* Tu tập */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">🙏</span>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Tu tập
-            </h2>
-          </div>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
+            Tu tập
+          </h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -368,13 +347,10 @@ export default function NewBelieverPage() {
         </div>
 
         {/* Gia đình & hậu sự */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">👨‍👩‍👧‍👦</span>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Gia đình & Hậu sự
-            </h2>
-          </div>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
+            Gia đình & Hậu sự
+          </h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -418,13 +394,10 @@ export default function NewBelieverPage() {
         </div>
 
         {/* Ghi chú */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">📝</span>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Ghi chú
-            </h2>
-          </div>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b">
+            Ghi chú
+          </h2>
           <textarea
             name="note"
             value={formData.note}
@@ -436,19 +409,19 @@ export default function NewBelieverPage() {
         </div>
 
         {/* Submit buttons */}
-        <div className="flex justify-end gap-4 pt-6 border-t-2 border-gray-100">
+        <div className="flex justify-end gap-3 pt-6 border-t">
           <Link
             href="/believers"
-            className="px-8 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 font-semibold text-gray-700 transition-all"
+            className="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700 transition"
           >
             Hủy
           </Link>
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-md transition disabled:opacity-50"
           >
-            {loading ? '🔄 Đang tạo...' : '✅ Tạo Tín Đồ'}
+            {loading ? 'Đang tạo...' : 'Tạo Tín Đồ'}
           </button>
         </div>
       </form>

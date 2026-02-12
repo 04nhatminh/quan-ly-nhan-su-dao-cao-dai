@@ -97,37 +97,32 @@ export default function BelieversListPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="card-elevated p-8 mb-8">
-        <div className="flex justify-between items-center">
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">Danh sách Tín Đồ</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">Danh sách Tín Đồ</h1>
             <p className="text-gray-600">Quản lý và tìm kiếm thông tin tín đồ</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={handleExport}
-              className="btn-secondary flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white text-sm rounded-lg font-semibold hover:shadow-md transition-all"
             >
-              <span className="text-xl">📥</span>
-              <span>Xuất CSV</span>
+              Xuất CSV
             </button>
             <Link
               href="/believers/new"
-              className="btn-primary flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg font-semibold hover:shadow-md transition-all"
             >
-              <span className="text-xl">➕</span>
-              <span>Thêm Tín Đồ</span>
+              Thêm Tín Đồ
             </Link>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="card-elevated p-8 mb-8">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-2xl">🔍</span>
-          <h2 className="text-xl font-bold text-gray-900">Bộ lọc tìm kiếm</h2>
-        </div>
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Bộ lọc tìm kiếm</h2>
         <form onSubmit={handleSearch}>
           <div className="grid md:grid-cols-3 gap-4 mb-4">
             <div>
@@ -222,9 +217,9 @@ export default function BelieversListPage() {
           <div className="flex justify-between items-center">
             <button
               type="submit"
-              className="btn-primary"
+              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-md transition-all"
             >
-              🔍 Tìm kiếm
+              Tìm kiếm
             </button>
             
             <div className="flex gap-2 items-center">
@@ -253,18 +248,17 @@ export default function BelieversListPage() {
 
       {/* Results */}
       {loading ? (
-        <div className="card-elevated p-12 text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-200 border-t-purple-600"></div>
-          <p className="mt-4 text-gray-600 font-medium">Đang tải dữ liệu...</p>
+        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-purple-200 border-t-purple-600"></div>
+          <p className="mt-3 text-gray-600">Đang tải dữ liệu...</p>
         </div>
       ) : believers.length === 0 ? (
-        <div className="card-elevated p-16 text-center">
-          <div className="text-6xl mb-4">📭</div>
-          <p className="text-gray-500 text-lg">Không tìm thấy tín đồ nào</p>
+        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+          <p className="text-gray-500">Đang tải dữ liệu...</p>
         </div>
       ) : (
         <>
-          <div className="card-elevated overflow-hidden">
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-purple-50 to-blue-50 border-b-2 border-purple-200">
@@ -320,13 +314,10 @@ export default function BelieversListPage() {
           </div>
 
           {/* Pagination */}
-          <div className="mt-8 card-elevated p-6 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📊</span>
-              <p className="text-sm font-semibold text-gray-700">
-                Hiển thị {believers.length} trên tổng {pagination.total} tín đồ
-              </p>
-            </div>
+          <div className="flex justify-between items-center pt-6 border-t">
+            <p className="text-sm font-medium text-gray-700">
+              Hiển thị {believers.length} trên tổng {pagination.total} tín đồ
+            </p>
             <div className="flex gap-3 items-center">
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
