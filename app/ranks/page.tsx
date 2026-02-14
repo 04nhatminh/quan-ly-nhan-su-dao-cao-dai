@@ -175,7 +175,7 @@ export default function RanksPage() {
                     className={`px-4 py-3 font-bold transition-all ${
                       selectedGroup === group
                         ? "text-black border-b-4 border-black -mb-2"
-                        : "text-gray-600 hover:text-black"
+                        : "text-gray-600 hover:text-black hover:cursor-pointer"
                     }`}
                   >
                     {groupLabels[group]}

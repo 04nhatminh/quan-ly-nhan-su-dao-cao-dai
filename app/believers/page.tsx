@@ -5,17 +5,31 @@ import Link from "next/link";
 
 interface Believer {
   id: string;
-  holyName?: string;
   fullName: string;
   dateOfBirth: string;
+  xaDao?: string;
+  hoDao?: string;
   phone?: string;
   email?: string;
   address?: string;
-  rank?: {
+  gender?: string;
+  ngayNhapMon?: string;
+  ngayTamThanh?: string;
+  traiKy?: string;
+  tuChan?: string;
+  fatherName?: string;
+  motherName?: string;
+  ngayQuyLieu?: string;
+  note?: string;
+  rankAssignments?: Array<{
     id: string;
-    name: string;
-    level: number;
-  };
+    rank: {
+      id: string;
+      displayName: string;
+      group: string;
+    };
+    decisionDate?: string;
+  }>;
   createdAt: string;
 }
 
@@ -49,7 +63,8 @@ export default function BelieversPage() {
     try {
       const response = await fetch("/api/ranks");
       const data = await response.json();
-      setRanks(data.ranks || data);
+      const allRanks = data.ranks || [];
+      setRanks(allRanks);
     } catch (error) {
       console.error("Error fetching ranks:", error);
     }
@@ -95,12 +110,13 @@ export default function BelieversPage() {
 
   const filteredBelievers = believers.filter((believer) => {
     const matchesSearch =
-      (believer.holyName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       (believer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       (believer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-      (believer.phone?.includes(searchTerm) ?? false);
+      (believer.phone?.includes(searchTerm) ?? false) ||
+      (believer.hoDao?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (believer.xaDao?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
 
-    const matchesRank = !filterRank || believer.rank?.id === filterRank;
+    const matchesRank = !filterRank || believer.rankAssignments?.[0]?.rank?.id === filterRank;
 
     return matchesSearch && matchesRank;
   });
@@ -129,7 +145,7 @@ export default function BelieversPage() {
           <div className="flex-1 min-w-[300px]">
             <input
               type="text"
-              placeholder="Tìm kiếm theo tên, thánh danh, email, SĐT..."
+              placeholder="Tìm kiếm theo tên"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
@@ -143,7 +159,7 @@ export default function BelieversPage() {
             <option value="">Tất cả phẩm vị</option>
             {ranks.map((rank) => (
               <option key={rank.id} value={rank.id}>
-                {rank.name}
+                {rank.displayName}
               </option>
             ))}
           </select>
@@ -192,11 +208,10 @@ export default function BelieversPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-black text-white">
-                    <th className="px-6 py-4 text-left font-bold">Thánh Danh</th>
                     <th className="px-6 py-4 text-left font-bold">Họ Tên</th>
                     <th className="px-6 py-4 text-left font-bold">Phẩm Vị</th>
                     <th className="px-6 py-4 text-left font-bold">Ngày Sinh</th>
-                    <th className="px-6 py-4 text-left font-bold">Liên Hệ</th>
+                    <th className="px-6 py-4 text-left font-bold">Giới Tính</th>
                     <th className="px-6 py-4 text-center font-bold">Thao Tác</th>
                   </tr>
                 </thead>
@@ -209,26 +224,25 @@ export default function BelieversPage() {
                       }`}
                     >
                       <td className="px-6 py-4 font-medium text-black">
-                        {believer.holyName || believer.fullName}
+                        {believer.fullName}
                       </td>
-                      <td className="px-6 py-4">{believer.fullName}</td>
                       <td className="px-6 py-4">
-                        {believer.rank ? (
+                        {believer.rankAssignments && believer.rankAssignments.length > 0 ? (
                           <span className="px-3 py-1 bg-black text-white text-sm rounded-full">
-                            {believer.rank.name}
+                            {believer.rankAssignments[0].rank.displayName}
                           </span>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-gray-600" suppressHydrationWarning>
-                        {new Date(believer.dateOfBirth).toLocaleDateString("vi-VN")}
+                        {believer.dateOfBirth ? new Date(believer.dateOfBirth).toLocaleDateString("vi-VN") : "-"}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <div className="text-gray-600">
-                          {believer.phone && <div>📞 {believer.phone}</div>}
-                          {believer.email && <div>📧 {believer.email}</div>}
-                        </div>
+                        {believer.gender === 'MALE' && <span>Nam</span>}
+                        {believer.gender === 'FEMALE' && <span>Nữ</span>}
+                        {believer.gender === 'OTHER' && <span>Khác</span>}
+                        {!believer.gender && <span className="text-gray-400">-</span>}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2 justify-center">

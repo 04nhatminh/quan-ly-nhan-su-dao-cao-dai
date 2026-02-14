@@ -73,6 +73,17 @@ export async function GET(request: NextRequest) {
         orderBy: {
           [sortBy]: sortOrder,
         },
+        include: {
+          rankAssignments: {
+            include: {
+              rank: true,
+            },
+            orderBy: {
+              decisionDate: 'desc',
+            },
+            take: 1,
+          },
+        },
       }),
       prisma.believer.count({ where }),
     ]);

@@ -51,7 +51,7 @@ export function getTuChanLabel(tuChan: TuChan | null | undefined): string {
     LINH: 'Linh châu',
     TRUONG: 'Trưởng châu',
     TAM: 'Tâm châu',
-    TBHC: 'Tạm Bảo Huyền Châu',
+    TBHC: 'Tam Bảo Huyền Châu',
   } as const;
   return labels[tuChan];
 }
@@ -88,7 +88,7 @@ export function getTuChanOptions() {
     { value: 'LINH' as const, label: 'Linh châu' },
     { value: 'TRUONG' as const, label: 'Trưởng châu' },
     { value: 'TAM' as const, label: 'Tâm châu' },
-    { value: 'TBHC' as const, label: 'Tạm Bảo Huyền Châu' },
+    { value: 'TBHC' as const, label: 'Tam Bảo Huyền Châu' },
   ];
 }
 

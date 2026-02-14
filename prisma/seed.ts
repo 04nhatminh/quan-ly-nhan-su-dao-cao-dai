@@ -77,6 +77,44 @@ async function main() {
   }
   
   console.log('Sample believers created successfully');
+  
+  // Create sample rank assignments
+  console.log('Creating sample rank assignments...');
+  
+  const believers = await prisma.believer.findMany();
+  const ranks = await prisma.rank.findMany();
+  
+  if (believers.length > 0 && ranks.length > 0) {
+    // Assign first rank to first believer
+    const firstRank = ranks[0];
+    const firstBeliever = believers[0];
+    
+    await prisma.rankAssignment.create({
+      data: {
+        believerId: firstBeliever.id,
+        rankId: firstRank.id,
+        decisionNumber: 'DECISION_001',
+        decisionDate: new Date('2020-01-01'),
+      },
+    });
+    
+    // Assign second rank to second believer if exists
+    if (believers.length > 1 && ranks.length > 1) {
+      const secondRank = ranks[1];
+      const secondBeliever = believers[1];
+      
+      await prisma.rankAssignment.create({
+        data: {
+          believerId: secondBeliever.id,
+          rankId: secondRank.id,
+          decisionNumber: 'DECISION_002',
+          decisionDate: new Date('2022-06-15'),
+        },
+      });
+    }
+  }
+  
+  console.log('Sample rank assignments created successfully');
   console.log('Seed completed!');
 }
 
