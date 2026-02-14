@@ -8,15 +8,41 @@ interface Believer {
   id: string;
   holyName?: string;
   fullName: string;
-  dateOfBirth: string;
+  fullNameNormalized?: string;
+  dateOfBirth?: string;
+  gender?: string;
   phone?: string;
   email?: string;
   address?: string;
+  xaDao?: string;
+  hoDao?: string;
+  ngayNhapMon?: string;
+  ngayTamThanh?: string;
+  traiKy?: string;
+  tuChan?: string;
+  fatherName?: string;
+  motherName?: string;
+  ngayQuyLieu?: string;
+  note?: string;
   rank?: {
     id: string;
     name: string;
     level: number;
   };
+  rankAssignments?: Array<{
+    id: string;
+    rank: {
+      id: string;
+      displayName: string;
+      code: string;
+      group: string;
+    };
+    decisionNumber?: string;
+    decisionDate?: string;
+    decisionNote?: string;
+    decisionFileUrl?: string;
+    createdAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -141,9 +167,8 @@ export default function BelieverDetailPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-black mb-2">
-                {believer.holyName || believer.fullName}
+                {believer.fullName}
               </h1>
-              <p className="text-xl text-gray-600">{believer.fullName}</p>
             </div>
             {!isEditing && (
               <div className="flex gap-3">
@@ -181,7 +206,7 @@ export default function BelieverDetailPage() {
                     type="text"
                     value={editData.fullName || ""}
                     onChange={(e) =>
-                      setEditData({ ...editData, fullName: e.target.value, holyName: e.target.value })
+                      setEditData({ ...editData, fullName: e.target.value })
                     }
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
                   />
@@ -189,7 +214,7 @@ export default function BelieverDetailPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-black mb-2">
-                    Ngày Sinh *
+                    Ngày Sinh
                   </label>
                   <input
                     type="date"
@@ -207,22 +232,168 @@ export default function BelieverDetailPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-black mb-2">
-                    Phẩm Vị
+                    Giới Tính
                   </label>
                   <select
-                    value={(editData.rank as any)?.id || ""}
+                    value={editData.gender || ""}
                     onChange={(e) =>
-                      setEditData({ ...editData, rank: { id: e.target.value, name: ranks.find(r => r.id === e.target.value)?.name || "", level: ranks.find(r => r.id === e.target.value)?.level || 0 } })
+                      setEditData({ ...editData, gender: e.target.value })
                     }
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
                   >
-                    <option value="">Chọn phẩm vị</option>
-                    {ranks.map((rank) => (
-                      <option key={rank.id} value={rank.id}>
-                        {rank.name}
-                      </option>
-                    ))}
+                    <option value="">Chọn giới tính</option>
+                    <option value="MALE">Nam</option>
+                    <option value="FEMALE">Nữ</option>
+                    <option value="OTHER">Khác</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Xã Đạo
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.xaDao || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, xaDao: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Họ Đạo
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.hoDao || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, hoDao: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Ngày Nhập Môn
+                  </label>
+                  <input
+                    type="date"
+                    value={
+                      editData.ngayNhapMon
+                        ? new Date(editData.ngayNhapMon).toISOString().split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setEditData({ ...editData, ngayNhapMon: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Ngày Tam Thánh
+                  </label>
+                  <input
+                    type="date"
+                    value={
+                      editData.ngayTamThanh
+                        ? new Date(editData.ngayTamThanh).toISOString().split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setEditData({ ...editData, ngayTamThanh: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Trài Kỳ
+                  </label>
+                  <select
+                    value={editData.traiKy || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, traiKy: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  >
+                    <option value="">Chọn trài kỳ</option>
+                    <option value="SIX_DAYS">6 ngày</option>
+                    <option value="TEN_DAYS">10 ngày</option>
+                    <option value="SIXTEEN_DAYS">16 ngày</option>
+                    <option value="FULL">Trường</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Tu Chân
+                  </label>
+                  <select
+                    value={editData.tuChan || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, tuChan: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  >
+                    <option value="">Chọn tu chân</option>
+                    <option value="LINH">Linh</option>
+                    <option value="TRUONG">Trưởng</option>
+                    <option value="TAM">Tâm</option>
+                    <option value="TBHC">Tam bảo huyền châu</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Tên Cha
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.fatherName || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, fatherName: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Tên Mẹ
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.motherName || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, motherName: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-black mb-2">
+                    Ngày Quy Liêu
+                  </label>
+                  <input
+                    type="date"
+                    value={
+                      editData.ngayQuyLieu
+                        ? new Date(editData.ngayQuyLieu).toISOString().split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setEditData({ ...editData, ngayQuyLieu: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                  />
                 </div>
 
                 <div>
@@ -268,6 +439,20 @@ export default function BelieverDetailPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-bold text-black mb-2">
+                  Ghi Chú
+                </label>
+                <textarea
+                  value={editData.note || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, note: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                />
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleUpdate}
@@ -296,13 +481,6 @@ export default function BelieverDetailPage() {
                 <div className="space-y-6">
                   <div>
                     <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
-                      Thánh Danh
-                    </div>
-                    <div className="text-xl text-black">{believer.holyName || believer.fullName}</div>
-                  </div>
-
-                  <div>
-                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
                       Họ Tên
                     </div>
                     <div className="text-xl text-black">{believer.fullName}</div>
@@ -313,21 +491,120 @@ export default function BelieverDetailPage() {
                       Ngày Sinh
                     </div>
                     <div className="text-xl text-black" suppressHydrationWarning>
-                      {new Date(believer.dateOfBirth).toLocaleDateString("vi-VN")}
+                      {believer.dateOfBirth
+                        ? new Date(believer.dateOfBirth).toLocaleDateString("vi-VN")
+                        : "-"}
                     </div>
                   </div>
 
                   <div>
                     <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
-                      Phẩm Vị
+                      Giới Tính
                     </div>
-                    {believer.rank ? (
-                      <div className="inline-block px-4 py-2 bg-black text-white rounded-lg">
-                        {believer.rank.name}
-                      </div>
-                    ) : (
-                      <div className="text-xl text-gray-400">Chưa có phẩm vị</div>
-                    )}
+                    <div className="text-xl text-black">
+                      {believer.gender === "MALE"
+                        ? "Nam"
+                        : believer.gender === "FEMALE"
+                        ? "Nữ"
+                        : believer.gender === "OTHER"
+                        ? "Khác"
+                        : "-"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Xã Đạo
+                    </div>
+                    <div className="text-xl text-black">{believer.xaDao || "-"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Họ Đạo
+                    </div>
+                    <div className="text-xl text-black">{believer.hoDao || "-"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Ngày Nhập Môn
+                    </div>
+                    <div className="text-xl text-black" suppressHydrationWarning>
+                      {believer.ngayNhapMon
+                        ? new Date(believer.ngayNhapMon).toLocaleDateString("vi-VN")
+                        : "-"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Ngày Tắm Thánh
+                    </div>
+                    <div className="text-xl text-black" suppressHydrationWarning>
+                      {believer.ngayTamThanh
+                        ? new Date(believer.ngayTamThanh).toLocaleDateString("vi-VN")
+                        : "-"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Trai Kỳ
+                    </div>
+                    <div className="text-xl text-black">
+                      {believer.traiKy === "SIX_DAYS"
+                        ? "6 ngày"
+                        : believer.traiKy === "TEN_DAYS"
+                        ? "10 ngày"
+                        : believer.traiKy === "SIXTEEN_DAYS"
+                        ? "16 ngày"
+                        : believer.traiKy === "FULL"
+                        ? "Trường"
+                        : believer.traiKy || "-"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Tu Chân
+                    </div>
+                    <div className="text-xl text-black">
+                      {believer.tuChan === "LINH"
+                        ? "Linh"
+                        : believer.tuChan === "TRUONG"
+                        ? "Trưởng"
+                        : believer.tuChan === "TAM"
+                        ? "Tâm"
+                        : believer.tuChan === "TBHC"
+                        ? "Tam bảo huyền châu"
+                        : believer.tuChan || "-"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Tên Cha
+                    </div>
+                    <div className="text-xl text-black">{believer.fatherName || "-"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Tên Mẹ
+                    </div>
+                    <div className="text-xl text-black">{believer.motherName || "-"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Ngày Quy Liễu
+                    </div>
+                    <div className="text-xl text-black" suppressHydrationWarning>
+                      {believer.ngayQuyLieu
+                        ? new Date(believer.ngayQuyLieu).toLocaleDateString("vi-VN")
+                        : "-"}
+                    </div>
                   </div>
                 </div>
 
@@ -358,8 +635,69 @@ export default function BelieverDetailPage() {
                       {believer.address || "-"}
                     </div>
                   </div>
+
+                  <div>
+                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Ghi Chú
+                    </div>
+                    <div className="text-xl text-black whitespace-pre-wrap">
+                      {believer.note || "-"}
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Lịch sử phẩm vị */}
+              {believer.rankAssignments && believer.rankAssignments.length > 0 && (
+                <div className="mt-8 pt-8 border-t-2 border-gray-200">
+                  <h3 className="text-xl font-bold text-black mb-4">Lịch Sử Phẩm Vị</h3>
+                  <div className="space-y-4">
+                    {believer.rankAssignments.map((assignment) => (
+                      <div
+                        key={assignment.id}
+                        className="p-4 border-2 border-gray-200 rounded-lg"
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">
+                              Phẩm Vị
+                            </div>
+                            <div className="text-lg font-semibold text-black">
+                              {assignment.rank.displayName}
+                            </div>
+                          </div>
+                          <div suppressHydrationWarning>
+                            <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">
+                              Ngày Quyết Định
+                            </div>
+                            <div className="text-lg text-black">
+                              {assignment.decisionDate
+                                ? new Date(assignment.decisionDate).toLocaleDateString("vi-VN")
+                                : "-"}
+                            </div>
+                          </div>
+                          {assignment.decisionNumber && (
+                            <div>
+                              <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">
+                                Số Quyết Định
+                              </div>
+                              <div className="text-lg text-black">{assignment.decisionNumber}</div>
+                            </div>
+                          )}
+                          {assignment.decisionNote && (
+                            <div>
+                              <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">
+                                Ghi Chú
+                              </div>
+                              <div className="text-lg text-black">{assignment.decisionNote}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="mt-8 pt-8 border-t-2 border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">

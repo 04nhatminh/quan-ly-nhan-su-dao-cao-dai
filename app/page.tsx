@@ -103,7 +103,7 @@ export default function HomePage() {
                 Quản Lý Tín Đồ
               </h3>
               <p className="text-gray-600">
-                Theo dõi thông tin chi tiết của từng tín đồ, bao gồm thánh danh,
+                Theo dõi thông tin chi tiết của từng tín đồ, bao gồm tên,
                 phẩm vị, và thông tin liên hệ.
               </p>
             </div>
