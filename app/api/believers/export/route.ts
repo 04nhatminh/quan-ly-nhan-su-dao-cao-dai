@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     
     const getTuChanLabel = (tc: TuChan | null) => {
       if (!tc) return '';
-      return { LINH: 'Linh', TAM: 'Tâm', TAM_THOI: 'Tạm' }[tc];
+      return { LINH: 'Linh châu', TRUONG: 'Trưởng châu', TAM: 'Tâm châu', TBHC: 'Tam Bảo Huyền Châu' }[tc];
     };
     
     const formatDate = (date: Date | null) => {
@@ -80,11 +80,11 @@ export async function GET(request: NextRequest) {
       'Tu Chấn',
       'Tên cha',
       'Tên mẹ',
-      'Ngày cúng cửu',
+      'Ngày quy liễu',
       'Ghi chú',
     ];
     
-    const rows = believers.map((b: { fullName: any; dateOfBirth: Date | null; gender: Gender | null; xaDao: any; hoDao: any; ngayNhapMon: Date | null; ngayTamThanh: Date | null; traiKy: TraiKy | null; tuChan: TuChan | null; fatherName: any; motherName: any; ngayCungCuu: Date | null; note: any; }) => [
+    const rows = believers.map((b: any) => [
       b.fullName,
       formatDate(b.dateOfBirth),
       getGenderLabel(b.gender),
@@ -96,7 +96,6 @@ export async function GET(request: NextRequest) {
       getTuChanLabel(b.tuChan),
       b.fatherName || '',
       b.motherName || '',
-      formatDate(b.ngayCungCuu),
       b.note || '',
     ]);
     

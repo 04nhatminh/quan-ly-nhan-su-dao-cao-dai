@@ -7,7 +7,6 @@ const createRankSchema = z.object({
   group: z.enum(['CUU_TRUNG_DAI', 'PHUOC_THIEN', 'HIEP_THIEN_DAI']),
   code: z.string().min(1, 'Mã phẩm vị là bắt buộc'),
   displayName: z.string().min(1, 'Tên hiển thị là bắt buộc'),
-  order: z.number().int().positive(),
 });
 
 /**
@@ -28,7 +27,6 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: [
         { group: 'asc' },
-        { order: 'asc' },
       ],
     });
     

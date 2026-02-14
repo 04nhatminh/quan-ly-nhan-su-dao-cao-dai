@@ -5,21 +5,22 @@ const prisma = new PrismaClient();
 // Danh sách phẩm vị theo yêu cầu
 const defaultRanks = [
   // CUU_TRUNG_DAI (Cửu Trùng Đài)
-  { group: RankGroup.CUU_TRUNG_DAI, code: 'TIN_DO', displayName: 'Tín Đồ', order: 1 },
-  { group: RankGroup.CUU_TRUNG_DAI, code: 'CHANH_TRI_SU', displayName: 'Chánh Trị Sự', order: 2 },
-  { group: RankGroup.CUU_TRUNG_DAI, code: 'PHO_TRI_SU', displayName: 'Phó Trị Sự', order: 3 },
-  { group: RankGroup.CUU_TRUNG_DAI, code: 'THONG_SU', displayName: 'Thông Sự', order: 4 },
-  { group: RankGroup.CUU_TRUNG_DAI, code: 'LE_SANH', displayName: 'Lễ Sanh', order: 5 },
-  { group: RankGroup.CUU_TRUNG_DAI, code: 'QUYEN_GIAO_HUU', displayName: 'Quyền Giáo Hữu', order: 6 },
-  { group: RankGroup.CUU_TRUNG_DAI, code: 'GIAO_HUU', displayName: 'Giáo Hữu', order: 7 },
+  { group: RankGroup.CUU_TRUNG_DAI, code: 'TIN_DO', displayName: 'Tín Đồ' },
+  { group: RankGroup.CUU_TRUNG_DAI, code: 'CHANH_TRI_SU', displayName: 'Chánh Trị Sự' },
+  { group: RankGroup.CUU_TRUNG_DAI, code: 'PHO_TRI_SU', displayName: 'Phó Trị Sự' },
+  { group: RankGroup.CUU_TRUNG_DAI, code: 'THONG_SU', displayName: 'Thông Sự' },
+  { group: RankGroup.CUU_TRUNG_DAI, code: 'LE_SANH', displayName: 'Lễ Sanh' },
+  { group: RankGroup.CUU_TRUNG_DAI, code: 'QUYEN_GIAO_HUU', displayName: 'Quyền Giáo Hữu' },
+  { group: RankGroup.CUU_TRUNG_DAI, code: 'GIAO_HUU', displayName: 'Giáo Hữu' },
   
   // PHUOC_THIEN (Phước Thiện)
-  { group: RankGroup.PHUOC_THIEN, code: 'THINH_THIEN', displayName: 'Thỉnh Thiện', order: 1 },
-  { group: RankGroup.PHUOC_THIEN, code: 'HANH_THIEN', displayName: 'Hành Thiện', order: 2 },
+  { group: RankGroup.PHUOC_THIEN, code: 'DU_THIEN', displayName: 'Dự Thiện' },
+  { group: RankGroup.PHUOC_THIEN, code: 'THINH_THIEN', displayName: 'Thính Thiện' },
+  { group: RankGroup.PHUOC_THIEN, code: 'HANH_THIEN', displayName: 'Hành Thiện' },
   
   // HIEP_THIEN_DAI (Hiệp Thiên Đài)
-  { group: RankGroup.HIEP_THIEN_DAI, code: 'TUNG_SI_QUAN', displayName: 'Tùng Sĩ Quan', order: 1 },
-  { group: RankGroup.HIEP_THIEN_DAI, code: 'LUAT_SU', displayName: 'Luật Sư', order: 2 },
+  { group: RankGroup.HIEP_THIEN_DAI, code: 'TUNG_SI_QUAN', displayName: 'Tùng Sĩ Quân' },
+  { group: RankGroup.HIEP_THIEN_DAI, code: 'LUAT_SU', displayName: 'Luật Sự' },
 ];
 
 async function main() {

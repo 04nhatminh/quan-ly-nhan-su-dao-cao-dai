@@ -14,10 +14,10 @@ const createBelieverSchema = z.object({
   ngayNhapMon: z.string().optional().nullable(),
   ngayTamThanh: z.string().optional().nullable(),
   traiKy: z.enum(['SIX_DAYS', 'TEN_DAYS', 'SIXTEEN_DAYS', 'FULL']).optional().nullable(),
-  tuChan: z.enum(['LINH', 'TAM', 'TAM_THOI']).optional().nullable(),
+  tuChan: z.enum(['LINH', 'TRUONG', 'TAM', 'TBHC']).optional().nullable(),
   fatherName: z.string().optional().nullable(),
   motherName: z.string().optional().nullable(),
-  ngayCungCuu: z.string().optional().nullable(),
+  ngayQuyLieu: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
 });
 
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     if (validated.dateOfBirth) data.dateOfBirth = new Date(validated.dateOfBirth);
     if (validated.ngayNhapMon) data.ngayNhapMon = new Date(validated.ngayNhapMon);
     if (validated.ngayTamThanh) data.ngayTamThanh = new Date(validated.ngayTamThanh);
-    if (validated.ngayCungCuu) data.ngayCungCuu = new Date(validated.ngayCungCuu);
+    if (validated.ngayQuyLieu) data.ngayQuyLieu = new Date(validated.ngayQuyLieu);
     
     // Copy other fields
     if (validated.gender) data.gender = validated.gender;

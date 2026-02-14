@@ -48,10 +48,11 @@ export function getTraiKyLabel(traiKy: TraiKy | null | undefined): string {
 export function getTuChanLabel(tuChan: TuChan | null | undefined): string {
   if (!tuChan) return '';
   const labels: Record<TuChan, string> = {
-    LINH: 'Linh',
-    TAM: 'Tâm',
-    TAM_THOI: 'Tạm',
-  };
+    LINH: 'Linh châu',
+    TRUONG: 'Trưởng châu',
+    TAM: 'Tâm châu',
+    TBHC: 'Tạm Bảo Huyền Châu',
+  } as const;
   return labels[tuChan];
 }
 
@@ -84,9 +85,10 @@ export function getTraiKyOptions() {
  */
 export function getTuChanOptions() {
   return [
-    { value: 'LINH', label: 'Linh' },
-    { value: 'TAM', label: 'Tâm' },
-    { value: 'TAM_THOI', label: 'Tạm' },
+    { value: 'LINH' as const, label: 'Linh châu' },
+    { value: 'TRUONG' as const, label: 'Trưởng châu' },
+    { value: 'TAM' as const, label: 'Tâm châu' },
+    { value: 'TBHC' as const, label: 'Tạm Bảo Huyền Châu' },
   ];
 }
 

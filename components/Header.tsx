@@ -20,7 +20,7 @@ export default function Header() {
               CAO ĐÀI
             </div>
             <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
-              Quản Lý Nhân Sự
+              Quản Lý Tín Đồ
             </div>
           </Link>
 

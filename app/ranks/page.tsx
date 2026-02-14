@@ -4,24 +4,41 @@ import { useEffect, useState } from "react";
 
 interface Rank {
   id: string;
-  name: string;
-  level: number;
-  description?: string;
-  _count?: {
-    believers: number;
-  };
+  code: string;
+  displayName: string;
+  group: "CUU_TRUNG_DAI" | "PHUOC_THIEN" | "HIEP_THIEN_DAI";
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+type RankGroup = "CUU_TRUNG_DAI" | "PHUOC_THIEN" | "HIEP_THIEN_DAI";
+
+interface RanksData {
+  ranks: Rank[];
+  grouped: Record<RankGroup, Rank[]>;
+}
+
+const groupLabels: Record<RankGroup, string> = {
+  CUU_TRUNG_DAI: "Cửu Trùng Đài",
+  PHUOC_THIEN: "Phước Thiện",
+  HIEP_THIEN_DAI: "Hiệp Thiện Đài",
+};
+
 export default function RanksPage() {
-  const [ranks, setRanks] = useState<Rank[]>([]);
+  const [groupedRanks, setGroupedRanks] = useState<Record<RankGroup, Rank[]>>({
+    CUU_TRUNG_DAI: [],
+    PHUOC_THIEN: [],
+    HIEP_THIEN_DAI: [],
+  });
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<RankGroup>("CUU_TRUNG_DAI");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    level: 1,
-    description: "",
+    displayName: "",
+    group: "CUU_TRUNG_DAI" as RankGroup,
   });
 
   useEffect(() => {
@@ -32,8 +49,8 @@ export default function RanksPage() {
   const fetchRanks = async () => {
     try {
       const response = await fetch("/api/ranks");
-      const data = await response.json();
-      setRanks((data.ranks || data).sort((a: Rank, b: Rank) => a.level - b.level));
+      const data: RanksData = await response.json();
+      setGroupedRanks(data.grouped);
     } catch (error) {
       console.error("Error fetching ranks:", error);
     } finally {
@@ -44,19 +61,29 @@ export default function RanksPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
+    if (!formData.displayName.trim()) {
       alert("Vui lòng nhập tên phẩm vị!");
       return;
     }
 
     try {
       const url = editingId ? `/api/ranks/${editingId}` : "/api/ranks";
-      const method = editingId ? "PUT" : "POST";
+      const method = editingId ? "PATCH" : "POST";
+
+      const body = editingId
+        ? {
+            displayName: formData.displayName,
+          }
+        : {
+            displayName: formData.displayName,
+            group: formData.group,
+            code: formData.displayName.toLowerCase().replace(/\s+/g, "_"),
+          };
 
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       });
 
       if (response.ok) {
@@ -76,22 +103,14 @@ export default function RanksPage() {
   const handleEdit = (rank: Rank) => {
     setEditingId(rank.id);
     setFormData({
-      name: rank.name,
-      level: rank.level,
-      description: rank.description || "",
+      displayName: rank.displayName,
+      group: rank.group,
     });
     setIsAdding(true);
   };
 
-  const handleDelete = async (id: string, name: string, believersCount: number) => {
-    if (believersCount > 0) {
-      alert(
-        `Không thể xóa phẩm vị "${name}" vì còn ${believersCount} tín đồ đang sử dụng!`
-      );
-      return;
-    }
-
-    if (!confirm(`Bạn có chắc chắn muốn xóa phẩm vị "${name}"?`)) return;
+  const handleDelete = async (id: string, displayName: string) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa phẩm vị "${displayName}"?`)) return;
 
     try {
       const response = await fetch(`/api/ranks/${id}`, {
@@ -112,7 +131,10 @@ export default function RanksPage() {
   };
 
   const resetForm = () => {
-    setFormData({ name: "", level: 1, description: "" });
+    setFormData({
+      displayName: "",
+      group: "CUU_TRUNG_DAI",
+    });
     setIsAdding(false);
     setEditingId(null);
   };
@@ -139,56 +161,59 @@ export default function RanksPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Ranks List */}
           <div className="lg:col-span-2">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-black">
-                Danh Sách Phẩm Vị ({ranks.length})
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-black mb-4">
+                Danh Sách Phẩm Vị Theo Nhóm
               </h2>
-              {!isAdding && (
-                <button
-                  onClick={() => setIsAdding(true)}
-                  className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
-                >
-                  + Thêm Phẩm Vị
-                </button>
-              )}
+
+              {/* Group Tabs */}
+              <div className="flex gap-2 border-b-2 border-black">
+                {(Object.keys(groupLabels) as RankGroup[]).map((group) => (
+                  <button
+                    key={group}
+                    onClick={() => setSelectedGroup(group)}
+                    className={`px-4 py-3 font-bold transition-all ${
+                      selectedGroup === group
+                        ? "text-black border-b-4 border-black -mb-2"
+                        : "text-gray-600 hover:text-black"
+                    }`}
+                  >
+                    {groupLabels[group]}
+                    <span className="ml-2 text-sm">({groupedRanks[group]?.length || 0})</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {ranks.length === 0 ? (
+            {/* Display Selected Group Ranks */}
+            {groupedRanks[selectedGroup]?.length === 0 ? (
               <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-lg">
                 <div className="text-5xl mb-4">⭐</div>
-                <p className="text-xl text-gray-600 mb-4">Chưa có phẩm vị nào</p>
+                <p className="text-xl text-gray-600 mb-4">Chưa có phẩm vị nào trong nhóm này</p>
                 <button
-                  onClick={() => setIsAdding(true)}
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, group: selectedGroup }));
+                    setIsAdding(true);
+                  }}
                   className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
                 >
-                  Thêm phẩm vị đầu tiên
+                  Thêm phẩm vị
                 </button>
               </div>
             ) : (
               <div className="space-y-3">
-                {ranks.map((rank) => (
+                {groupedRanks[selectedGroup]?.map((rank) => (
                   <div
                     key={rank.id}
                     className="border-2 border-black rounded-lg p-6 hover:shadow-lg transition-shadow"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="px-3 py-1 bg-black text-white text-sm font-bold rounded">
-                            Cấp {rank.level}
-                          </div>
-                          <h3 className="text-2xl font-bold text-black">
-                            {rank.name}
-                          </h3>
-                        </div>
-                        {rank.description && (
-                          <p className="text-gray-600 mb-3">{rank.description}</p>
-                        )}
-                        <div className="text-sm text-gray-500">
-                          <span className="font-bold text-black">
-                            {rank._count?.believers || 0}
-                          </span>{" "}
-                          tín đồ
+                        <h3 className="text-2xl font-bold text-black">
+                          {rank.displayName}
+                        </h3>
+                        <div className="text-sm text-gray-500 mt-2">
+                          Mã: <span className="font-mono">{rank.code}</span>
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -199,13 +224,7 @@ export default function RanksPage() {
                           Sửa
                         </button>
                         <button
-                          onClick={() =>
-                            handleDelete(
-                              rank.id,
-                              rank.name,
-                              rank._count?.believers || 0
-                            )
-                          }
+                          onClick={() => handleDelete(rank.id, rank.displayName)}
                           className="px-4 py-2 bg-white border-2 border-black text-black text-sm rounded hover:bg-black hover:text-white transition-all duration-200"
                         >
                           Xóa
@@ -228,51 +247,42 @@ export default function RanksPage() {
                   </h3>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {!editingId && (
+                      <div>
+                        <label className="block text-sm font-bold text-black mb-2">
+                          Nhóm Phẩm Vị *
+                        </label>
+                        <select
+                          value={formData.group}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              group: e.target.value as RankGroup,
+                            })
+                          }
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                        >
+                          {(Object.keys(groupLabels) as RankGroup[]).map((group) => (
+                            <option key={group} value={group}>
+                              {groupLabels[group]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-sm font-bold text-black mb-2">
                         Tên Phẩm Vị *
                       </label>
                       <input
                         type="text"
-                        value={formData.name}
+                        value={formData.displayName}
                         onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
+                          setFormData({ ...formData, displayName: e.target.value })
                         }
                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
                         placeholder="Vd: Giáo Sư"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-bold text-black mb-2">
-                        Cấp Độ *
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={formData.level}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            level: parseInt(e.target.value),
-                          })
-                        }
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-bold text-black mb-2">
-                        Mô Tả
-                      </label>
-                      <textarea
-                        value={formData.description}
-                        onChange={(e) =>
-                          setFormData({ ...formData, description: e.target.value })
-                        }
-                        rows={3}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
-                        placeholder="Mô tả về phẩm vị..."
                       />
                     </div>
 
@@ -301,6 +311,18 @@ export default function RanksPage() {
                   </p>
                 </div>
               </div>
+            )}
+
+            {!isAdding && (
+              <button
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, group: selectedGroup }));
+                  setIsAdding(true);
+                }}
+                className="w-full px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
+              >
+                + Thêm Phẩm Vị
+              </button>
             )}
           </div>
         </div>

@@ -33,7 +33,7 @@ model Believer {
   // Gia đình & hậu sự
   fatherName         String?
   motherName         String?
-  ngayCungCuu        DateTime?
+  ngayQuyLieu        DateTime?
   
   // Khác
   note               String?
@@ -60,7 +60,6 @@ model Rank {
   group       RankGroup    // CUU_TRUNG_DAI, PHUOC_THIEN, HIEP_THIEN_DAI
   code        String       @unique
   displayName String
-  order       Int          // thứ tự hiển thị trong group
   isActive    Boolean      @default(true)
   
   createdAt   DateTime     @default(now())
@@ -69,7 +68,7 @@ model Rank {
   // Relations
   assignments RankAssignment[]
   
-  @@index([group, order])
+  @@index([group])
   @@index([isActive])
 }
 
@@ -113,8 +112,9 @@ enum TraiKy {
 
 enum TuChan {
   LINH      // Linh
+  TRUONG    // Trưởng
   TAM       // Tâm
-  TAM_THOI  // Tạm
+  TBHC      // Tam bảo huyền châu
 }
 
 enum RankGroup {

@@ -3,8 +3,8 @@ import Header from "@/components/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Quản Lý Nhân Sự",
-  description: "Ứng dụng quản lý nhân sự Cao Đài",
+  title: "Quản Lý Tín đồ",
+  description: "Ứng dụng quản lý tín đồ Cao Đài",
 };
 
 export default function RootLayout({

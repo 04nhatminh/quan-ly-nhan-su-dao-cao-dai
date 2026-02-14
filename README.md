@@ -1,6 +1,6 @@
 # Hệ Thống Quản Lý Tín Đồ Cao Đài
 
-Ứng dụng web quản lý thông tin nhân sự (tín đồ) cho Tôn giáo Cao Đài tại Việt Nam.
+Ứng dụng web quản lý thông tin tín đồ cho Tôn giáo Cao Đài tại Việt Nam.
 
 ## 🎯 Tính năng chính
 
@@ -124,7 +124,7 @@ quan-ly-nhan-su-dao-Cao-Dai/
    - Địa bàn: xaDao, hoDao
    - Mốc đạo: ngayNhapMon, ngayTamThanh
    - Tu tập: traiKy, tuChan
-   - Gia đình: fatherName, motherName, ngayCungCuu
+   - Gia đình: fatherName, motherName, ngayQuyLieu
 
 2. **Rank** (Phẩm vị)
    - group: CUU_TRUNG_DAI, PHUOC_THIEN, HIEP_THIEN_DAI

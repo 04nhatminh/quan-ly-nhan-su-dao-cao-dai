@@ -123,7 +123,7 @@ export default function HomePage() {
                 Báo Cáo & Thống Kê
               </h3>
               <p className="text-gray-600">
-                Xuất báo cáo và xem thống kê chi tiết về nhân sự và phân bổ phẩm
+                Xuất báo cáo và xem thống kê chi tiết về tín đồ và phân bổ phẩm
                 trật.
               </p>
             </div>
