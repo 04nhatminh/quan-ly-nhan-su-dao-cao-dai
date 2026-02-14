@@ -35,6 +35,11 @@ model Believer {
   motherName         String?
   ngayQuyLieu        DateTime?
   
+  // Liên lạc
+  phone              String?
+  email              String?
+  address            String?
+  
   // Khác
   note               String?
   

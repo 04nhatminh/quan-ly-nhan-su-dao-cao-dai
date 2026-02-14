@@ -7,6 +7,9 @@ export default function Header() {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
+    if (path === "/believers") {
+      return pathname === "/believers";
+    }
     return pathname === path || pathname.startsWith(path + "/");
   };
 

@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       'Xã Đạo',
       'Họ Đạo',
       'Ngày nhập môn',
-      'Ngày Tam Thanh',
+      'Ngày Tắm Thanh',
       'Trai Kỳ',
       'Tu Chân',
       'Tên cha',

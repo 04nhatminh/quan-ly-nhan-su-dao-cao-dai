@@ -22,6 +22,7 @@ const updateBelieverSchema = z.object({
   motherName: z.string().optional().nullable(),
   ngayQuyLieu: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
+  rankId: z.string().optional().nullable(),
 });
 
 /**
@@ -142,6 +143,38 @@ export async function PUT(
         },
       },
     });
+
+    // Create new RankAssignment if rankId is provided
+    if (validated.rankId) {
+      // Check if it's different from current rank
+      const currentRank = updatedBeliever.rankAssignments?.[0];
+      if (!currentRank || currentRank.rankId !== validated.rankId) {
+        await prisma.rankAssignment.create({
+          data: {
+            believerId: id,
+            rankId: validated.rankId,
+            decisionDate: new Date(),
+          },
+        });
+
+        // Fetch believer again to get updated rankAssignments
+        return NextResponse.json(
+          await prisma.believer.findUnique({
+            where: { id },
+            include: {
+              rankAssignments: {
+                include: {
+                  rank: true,
+                },
+                orderBy: {
+                  decisionDate: 'desc',
+                },
+              },
+            },
+          })
+        );
+      }
+    }
 
     return NextResponse.json(updatedBeliever);
   } catch (error) {

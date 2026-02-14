@@ -26,6 +26,7 @@ interface Believer {
     rank: {
       id: string;
       displayName: string;
+      code: string;
       group: string;
     };
     decisionDate?: string;
@@ -40,16 +41,23 @@ export default function BelieversPage() {
   const [filterRank, setFilterRank] = useState("");
   const [ranks, setRanks] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     setMounted(true);
     fetchBelievers();
     fetchRanks();
-  }, []);
+  }, [sortBy, sortOrder]);
 
   const fetchBelievers = async () => {
+    setLoading(true);
     try {
-      const response = await fetch("/api/believers");
+      const params = new URLSearchParams();
+      params.append("sortBy", sortBy);
+      params.append("sortOrder", sortOrder);
+      
+      const response = await fetch(`/api/believers?${params.toString()}`);
       const data = await response.json();
       setBelievers(data.data || []);
     } catch (error) {
@@ -57,6 +65,20 @@ export default function BelieversPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("desc");
+    }
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) return " ↕";
+    return sortOrder === "asc" ? " ↑" : " ↓";
   };
 
   const fetchRanks = async () => {
@@ -208,10 +230,30 @@ export default function BelieversPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-black text-white">
-                    <th className="px-6 py-4 text-left font-bold">Họ Tên</th>
-                    <th className="px-6 py-4 text-left font-bold">Phẩm Vị</th>
-                    <th className="px-6 py-4 text-left font-bold">Ngày Sinh</th>
-                    <th className="px-6 py-4 text-left font-bold">Giới Tính</th>
+                    <th 
+                      onClick={() => handleSort("fullName")}
+                      className="px-6 py-4 text-left font-bold cursor-pointer hover:bg-gray-900 transition-colors"
+                    >
+                      Họ Tên{getSortIcon("fullName")}
+                    </th>
+                    <th 
+                      onClick={() => handleSort("currentRank")}
+                      className="px-6 py-4 text-left font-bold cursor-pointer hover:bg-gray-900 transition-colors"
+                    >
+                      Phẩm Vị{getSortIcon("currentRank")}
+                    </th>
+                    <th 
+                      onClick={() => handleSort("dateOfBirth")}
+                      className="px-6 py-4 text-left font-bold cursor-pointer hover:bg-gray-900 transition-colors"
+                    >
+                      Ngày Sinh{getSortIcon("dateOfBirth")}
+                    </th>
+                    <th 
+                      onClick={() => handleSort("gender")}
+                      className="px-6 py-4 text-left font-bold cursor-pointer hover:bg-gray-900 transition-colors"
+                    >
+                      Giới Tính{getSortIcon("gender")}
+                    </th>
                     <th className="px-6 py-4 text-center font-bold">Thao Tác</th>
                   </tr>
                 </thead>

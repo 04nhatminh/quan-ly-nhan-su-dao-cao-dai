@@ -19,6 +19,10 @@ const createBelieverSchema = z.object({
   motherName: z.string().optional().nullable(),
   ngayQuyLieu: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
+  rankId: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  email: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
 });
 
 /**
@@ -45,8 +49,14 @@ export async function GET(request: NextRequest) {
     const xaDao = searchParams.get('xaDao') || '';
     
     // Sort
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    let sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+    
+    // Các trường hợp lệ để sort
+    const validSortFields = ['fullName', 'dateOfBirth', 'gender', 'createdAt', 'updatedAt', 'currentRank'];
+    if (!validSortFields.includes(sortBy)) {
+      sortBy = 'createdAt';
+    }
     
     // Build where clause
     const where: any = {};
@@ -64,15 +74,61 @@ export async function GET(request: NextRequest) {
     if (hoDao) where.hoDao = { contains: hoDao };
     if (xaDao) where.xaDao = { contains: xaDao };
     
+    // Nếu sort theo currentRank, cần fetch tất cả rồi sort trong memory
+    if (sortBy === 'currentRank') {
+      const allBelievers = await prisma.believer.findMany({
+        where,
+        include: {
+          rankAssignments: {
+            include: {
+              rank: true,
+            },
+            orderBy: {
+              decisionDate: 'desc',
+            },
+            take: 1,
+          },
+        },
+      });
+
+      // Sort theo displayName của current rank
+      allBelievers.sort((a, b) => {
+        const rankA = a.rankAssignments?.[0]?.rank?.displayName || '';
+        const rankB = b.rankAssignments?.[0]?.rank?.displayName || '';
+        
+        if (sortOrder === 'asc') {
+          return rankA.localeCompare(rankB, 'vi');
+        } else {
+          return rankB.localeCompare(rankA, 'vi');
+        }
+      });
+
+      // Apply pagination
+      const total = allBelievers.length;
+      const paginatedBelievers = allBelievers.slice(skip, skip + pageSize);
+
+      return NextResponse.json({
+        data: paginatedBelievers,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      });
+    }
+
+    // Build orderBy clause cho các trường khác
+    const orderBy: any = {};
+    orderBy[sortBy] = sortOrder;
+    
     // Execute query
     const [believers, total] = await Promise.all([
       prisma.believer.findMany({
         where,
         skip,
         take: pageSize,
-        orderBy: {
-          [sortBy]: sortOrder,
-        },
+        orderBy,
         include: {
           rankAssignments: {
             include: {
@@ -138,11 +194,54 @@ export async function POST(request: NextRequest) {
     if (validated.fatherName) data.fatherName = validated.fatherName;
     if (validated.motherName) data.motherName = validated.motherName;
     if (validated.note) data.note = validated.note;
+    if (validated.phone) data.phone = validated.phone;
+    if (validated.email) data.email = validated.email;
+    if (validated.address) data.address = validated.address;
     
     // Create believer
     const believer = await prisma.believer.create({
       data,
+      include: {
+        rankAssignments: {
+          include: {
+            rank: true,
+          },
+          orderBy: {
+            decisionDate: 'desc',
+          },
+        },
+      },
     });
+
+    // Create RankAssignment if rankId is provided
+    if (validated.rankId) {
+      await prisma.rankAssignment.create({
+        data: {
+          believerId: believer.id,
+          rankId: validated.rankId,
+          decisionDate: new Date(),
+          decisionNumber: '',
+        },
+      });
+
+      // Fetch believer again to get updated rankAssignments
+      return NextResponse.json(
+        await prisma.believer.findUnique({
+          where: { id: believer.id },
+          include: {
+            rankAssignments: {
+              include: {
+                rank: true,
+              },
+              orderBy: {
+                decisionDate: 'desc',
+              },
+            },
+          },
+        }),
+        { status: 201 }
+      );
+    }
     
     return NextResponse.json(believer, { status: 201 });
   } catch (error) {

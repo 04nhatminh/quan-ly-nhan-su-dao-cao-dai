@@ -296,7 +296,7 @@ export default function BelieverDetailPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-black mb-2">
-                    Ngày Tam Thánh
+                    Ngày Tắm Thánh
                   </label>
                   <input
                     type="date"
@@ -314,7 +314,7 @@ export default function BelieverDetailPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-black mb-2">
-                    Trài Kỳ
+                    Trai Kỳ
                   </label>
                   <select
                     value={editData.traiKy || ""}
@@ -323,7 +323,7 @@ export default function BelieverDetailPage() {
                     }
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
                   >
-                    <option value="">Chọn trài kỳ</option>
+                    <option value="">Chọn trai kỳ</option>
                     <option value="SIX_DAYS">6 ngày</option>
                     <option value="TEN_DAYS">10 ngày</option>
                     <option value="SIXTEEN_DAYS">16 ngày</option>
@@ -380,7 +380,7 @@ export default function BelieverDetailPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-black mb-2">
-                    Ngày Quy Liêu
+                    Ngày Quy Liễu
                   </label>
                   <input
                     type="date"
