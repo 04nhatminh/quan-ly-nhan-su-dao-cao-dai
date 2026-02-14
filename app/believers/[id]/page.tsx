@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
+interface RankAssignmentForm {
+  id: string;
+  rankId: string;
+  decisionNumber: string;
+  decisionDate: string;
+}
+
 interface Believer {
   id: string;
   holyName?: string;
@@ -54,6 +61,7 @@ export default function BelieverDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Believer>>({});
+  const [editRankAssignments, setEditRankAssignments] = useState<RankAssignmentForm[]>([]);
   const [ranks, setRanks] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -72,6 +80,16 @@ export default function BelieverDetailPage() {
         const data = await response.json();
         setBeliever(data);
         setEditData(data);
+        // Initialize rank assignments from believer data
+        if (data.rankAssignments && data.rankAssignments.length > 0) {
+          const rankAssignmentsData = data.rankAssignments.map((ra: any) => ({
+            id: ra.id,
+            rankId: ra.rank.id,
+            decisionNumber: ra.decisionNumber || "",
+            decisionDate: ra.decisionDate ? new Date(ra.decisionDate).toISOString().split('T')[0] : "",
+          }));
+          setEditRankAssignments(rankAssignmentsData);
+        }
       } else {
         alert("Không tìm thấy tín đồ!");
         router.push("/believers");
@@ -91,6 +109,30 @@ export default function BelieverDetailPage() {
     } catch (error) {
       console.error("Error fetching ranks:", error);
     }
+  };
+
+  const addRankAssignment = () => {
+    const newId = Date.now().toString();
+    setEditRankAssignments([
+      ...editRankAssignments,
+      { id: newId, rankId: "", decisionNumber: "", decisionDate: "" },
+    ]);
+  };
+
+  const removeRankAssignment = (id: string) => {
+    setEditRankAssignments(editRankAssignments.filter(r => r.id !== id));
+  };
+
+  const updateRankAssignment = (
+    id: string,
+    field: keyof RankAssignmentForm,
+    value: string
+  ) => {
+    setEditRankAssignments(
+      editRankAssignments.map(r =>
+        r.id === id ? { ...r, [field]: value } : r
+      )
+    );
   };
 
   const handleDelete = async () => {
@@ -115,10 +157,25 @@ export default function BelieverDetailPage() {
 
   const handleUpdate = async () => {
     try {
+      // Prepare rank assignments data
+      const rankAssignmentsData = editRankAssignments
+        .filter(r => r.rankId)
+        .map(r => ({
+          id: r.id,
+          rankId: r.rankId,
+          decisionNumber: r.decisionNumber || "",
+          decisionDate: r.decisionDate || null,
+        }));
+
+      const updateData = {
+        ...editData,
+        rankAssignments: rankAssignmentsData,
+      };
+
       const response = await fetch(`/api/believers/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editData),
+        body: JSON.stringify(updateData),
       });
 
       if (response.ok) {
@@ -425,6 +482,90 @@ export default function BelieverDetailPage() {
                 </div>
               </div>
 
+              {/* Phẩm Vị Đạt Được */}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-black">Phẩm Vị Đạt Được</h3>
+                  <button
+                    type="button"
+                    onClick={addRankAssignment}
+                    className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+                  >
+                    + Thêm Phẩm Vị
+                  </button>
+                </div>
+
+                {editRankAssignments.length === 0 ? (
+                  <p className="text-gray-600 italic mb-6">Chưa có phẩm vị nào. Nhấn "Thêm Phẩm Vị" để thêm.</p>
+                ) : (
+                  <div className="space-y-4 mb-6">
+                    {editRankAssignments.map((assignment, index) => (
+                      <div key={assignment.id} className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="font-semibold text-gray-800">Phẩm Vị #{index + 1}</h3>
+                          <button
+                            type="button"
+                            onClick={() => removeRankAssignment(assignment.id)}
+                            className="text-red-600 hover:text-red-800 font-medium text-sm transition-colors"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-bold text-black mb-2">
+                              Phẩm Vị <span className="text-red-600">*</span>
+                            </label>
+                            <select
+                              value={assignment.rankId}
+                              onChange={(e) => updateRankAssignment(assignment.id, "rankId", e.target.value)}
+                              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${
+                                !assignment.rankId
+                                  ? "border-gray-300 focus:border-black"
+                                  : "border-green-500 focus:border-green-600"
+                              }`}
+                            >
+                              <option value="">Chọn phẩm vị</option>
+                              {ranks.map((rank) => (
+                                <option key={rank.id} value={rank.id}>
+                                  {rank.displayName}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-bold text-black mb-2">
+                              Quyết Định Số
+                            </label>
+                            <input
+                              type="text"
+                              value={assignment.decisionNumber}
+                              onChange={(e) => updateRankAssignment(assignment.id, "decisionNumber", e.target.value)}
+                              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                              placeholder="Vd: 123/QĐ"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-bold text-black mb-2">
+                              Ngày Quyết Định
+                            </label>
+                            <input
+                              type="date"
+                              value={assignment.decisionDate}
+                              onChange={(e) => updateRankAssignment(assignment.id, "decisionDate", e.target.value)}
+                              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-bold text-black mb-2">
                   Địa Chỉ
@@ -464,6 +605,18 @@ export default function BelieverDetailPage() {
                   onClick={() => {
                     setIsEditing(false);
                     setEditData(believer);
+                    // Reset rank assignments
+                    if (believer?.rankAssignments && believer.rankAssignments.length > 0) {
+                      const rankAssignmentsData = believer.rankAssignments.map((ra: any) => ({
+                        id: ra.id,
+                        rankId: ra.rank.id,
+                        decisionNumber: ra.decisionNumber || "",
+                        decisionDate: ra.decisionDate ? new Date(ra.decisionDate).toISOString().split('T')[0] : "",
+                      }));
+                      setEditRankAssignments(rankAssignmentsData);
+                    } else {
+                      setEditRankAssignments([]);
+                    }
                   }}
                   className="px-8 py-3 bg-white border-2 border-gray-300 text-black rounded-lg hover:border-black transition-all duration-200 font-medium"
                 >
@@ -679,7 +832,7 @@ export default function BelieverDetailPage() {
                           {assignment.decisionNumber && (
                             <div>
                               <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">
-                                Số Quyết Định
+                                Quyết Định Số
                               </div>
                               <div className="text-lg text-black">{assignment.decisionNumber}</div>
                             </div>

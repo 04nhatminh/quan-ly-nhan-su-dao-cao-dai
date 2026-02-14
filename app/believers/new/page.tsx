@@ -4,6 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+interface RankAssignmentForm {
+  id: string;
+  rankId: string;
+  decisionNumber: string;
+  decisionDate: string;
+}
+
 export default function NewBelieverPage() {
   const router = useRouter();
   const [ranks, setRanks] = useState<any[]>([]);
@@ -24,9 +31,9 @@ export default function NewBelieverPage() {
     phone: "",
     email: "",
     address: "",
-    rankId: "",
     note: "",
   });
+  const [rankAssignments, setRankAssignments] = useState<RankAssignmentForm[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -44,27 +51,6 @@ export default function NewBelieverPage() {
     }
   };
 
-  const convertDateForAPI = (ddmmyyyy: string) => {
-    if (!ddmmyyyy) return "";
-    const parts = ddmmyyyy.split("/");
-    if (parts.length !== 3) return "";
-    return `${parts[2]}-${parts[1]}-${parts[0]}`;
-  };
-
-  const validateDate = (ddmmyyyy: string) => {
-    const regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
-    if (!regex.test(ddmmyyyy)) {
-      return false;
-    }
-    const [day, month, year] = ddmmyyyy.split("/").map(Number);
-    const date = new Date(year, month - 1, day);
-    return (
-      date.getFullYear() === year &&
-      date.getMonth() === month - 1 &&
-      date.getDate() === day
-    );
-  };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -80,21 +66,19 @@ export default function NewBelieverPage() {
       newErrors.hoDao = "Vui lòng nhập họ đạo";
     }
 
-    if (!formData.rankId) {
-      newErrors.rankId = "Vui lòng chọn phẩm vị";
-    }
-
-    // Validate ngày sinh nếu có nhập
-    if (formData.dateOfBirth && !validateDate(formData.dateOfBirth)) {
-      newErrors.dateOfBirth = "Ngày sinh không hợp lệ (định dạng: dd/mm/yyyy)";
-    }
-
+    // Email validation
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Email không hợp lệ";
     }
 
+    // Phone validation
     if (formData.phone && !/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
       newErrors.phone = "Số điện thoại không hợp lệ";
+    }
+
+    // Check at least one rank assignment
+    if (rankAssignments.length === 0 || !rankAssignments.some(r => r.rankId.trim())) {
+      newErrors.rankAssignments = "Vui lòng chọn ít nhất một phẩm vị";
     }
 
     setErrors(newErrors);
@@ -114,7 +98,7 @@ export default function NewBelieverPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: formData.fullName,
-          dateOfBirth: convertDateForAPI(formData.dateOfBirth),
+          dateOfBirth: formData.dateOfBirth,
           hoDao: formData.hoDao,
           xaDao: formData.xaDao,
           fatherName: formData.fatherName,
@@ -139,12 +123,22 @@ export default function NewBelieverPage() {
         }
       }
 
+      // Prepare rank assignments data
+      const rankAssignmentsData = rankAssignments
+        .filter(r => r.rankId)
+        .map(r => ({
+          rankId: r.rankId,
+          decisionNumber: r.decisionNumber || "",
+          decisionDate: r.decisionDate ? r.decisionDate : null,
+        }));
+
       const apiData = {
         ...formData,
-        dateOfBirth: convertDateForAPI(formData.dateOfBirth),
-        ngayNhapMon: formData.ngayNhapMon ? convertDateForAPI(formData.ngayNhapMon) : null,
-        ngayTamThanh: formData.ngayTamThanh ? convertDateForAPI(formData.ngayTamThanh) : null,
-        ngayQuyLieu: formData.ngayQuyLieu ? convertDateForAPI(formData.ngayQuyLieu) : null,
+        dateOfBirth: formData.dateOfBirth,
+        ngayNhapMon: formData.ngayNhapMon ? formData.ngayNhapMon : null,
+        ngayTamThanh: formData.ngayTamThanh ? formData.ngayTamThanh : null,
+        ngayQuyLieu: formData.ngayQuyLieu ? formData.ngayQuyLieu : null,
+        rankAssignments: rankAssignmentsData,
       };
 
       const response = await fetch("/api/believers", {
@@ -184,6 +178,36 @@ export default function NewBelieverPage() {
     setFormData({ ...formData, [name]: value });
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
+    }
+  };
+
+  const addRankAssignment = () => {
+    const newId = Date.now().toString();
+    setRankAssignments([
+      ...rankAssignments,
+      { id: newId, rankId: "", decisionNumber: "", decisionDate: "" },
+    ]);
+  };
+
+  const removeRankAssignment = (id: string) => {
+    setRankAssignments(rankAssignments.filter(r => r.id !== id));
+  };
+
+  const updateRankAssignment = (
+    id: string,
+    field: keyof RankAssignmentForm,
+    value: string
+  ) => {
+    setRankAssignments(
+      rankAssignments.map(r =>
+        r.id === id ? { ...r, [field]: value } : r
+      )
+    );
+    // Clear error for this field
+    if (errors[`rankAssignments.${rankAssignments.findIndex(r => r.id === id)}.${field}`]) {
+      const newErrors = { ...errors };
+      delete newErrors[`rankAssignments.${rankAssignments.findIndex(r => r.id === id)}.${field}`];
+      setErrors(newErrors);
     }
   };
 
@@ -237,7 +261,7 @@ export default function NewBelieverPage() {
                     Ngày Sinh
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     name="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={handleDateChange}
@@ -276,38 +300,12 @@ export default function NewBelieverPage() {
                     <p className="mt-2 text-sm text-red-600">{errors.gender}</p>
                   )}
                 </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-black mb-2">
-                    Phẩm Vị <span className="text-red-600">*</span>
-                  </label>
-                  <select
-                    name="rankId"
-                    value={formData.rankId}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${
-                      errors.rankId
-                        ? "border-red-500 focus:border-red-600"
-                        : "border-gray-300 focus:border-black"
-                    }`}
-                  >
-                    <option value="">Chọn phẩm vị</option>
-                    {ranks.map((rank) => (
-                      <option key={rank.id} value={rank.id}>
-                        {rank.displayName}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.rankId && (
-                    <p className="mt-2 text-sm text-red-600">{errors.rankId}</p>
-                  )}
-                </div>
               </div>
             </div>
 
             {/* Địa bàn */}
             <div>
-              <h2 className="text-2xl font-bold text-black mb-6">Địa Bàn</h2>
+              <h2 className="text-2xl font-bold text-black mb-6">Nơi Sinh Hoạt</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-black mb-2">
@@ -348,14 +346,14 @@ export default function NewBelieverPage() {
 
             {/* Mốc Đạo */}
             <div>
-              <h2 className="text-2xl font-bold text-black mb-6">Mốc Đạo</h2>
+              <h2 className="text-2xl font-bold text-black mb-6">Mốc Thời Gian</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-black mb-2">
                     Ngày Nhập Môn
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     name="ngayNhapMon"
                     value={formData.ngayNhapMon}
                     onChange={handleDateChange}
@@ -369,7 +367,7 @@ export default function NewBelieverPage() {
                     Ngày Tắm Thánh
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     name="ngayTamThanh"
                     value={formData.ngayTamThanh}
                     onChange={handleDateChange}
@@ -383,7 +381,7 @@ export default function NewBelieverPage() {
                     Ngày Quy Liễu
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     name="ngayQuyLieu"
                     value={formData.ngayQuyLieu}
                     onChange={handleDateChange}
@@ -530,6 +528,95 @@ export default function NewBelieverPage() {
                   placeholder="Nhập địa chỉ đầy đủ"
                 />
               </div>
+            </div>
+
+            {/* Phẩm Vị Đạt Được */}
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-black">Phẩm Vị Đạt Được <span className="text-red-600">*</span></h2>
+                <button
+                  type="button"
+                  onClick={addRankAssignment}
+                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+                >
+                  + Thêm Phẩm Vị
+                </button>
+              </div>
+
+              {errors.rankAssignments && (
+                <p className="mb-4 text-sm text-red-600 font-medium">{errors.rankAssignments}</p>
+              )}
+
+              {rankAssignments.length === 0 ? (
+                <p className="text-gray-600 italic mb-6">Chưa có phẩm vị nào. Nhấn "Thêm Phẩm Vị" để thêm.</p>
+              ) : (
+                <div className="space-y-4 mb-6">
+                  {rankAssignments.map((assignment, index) => (
+                    <div key={assignment.id} className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="font-semibold text-gray-800">Phẩm Vị #{index + 1}</h3>
+                        <button
+                          type="button"
+                          onClick={() => removeRankAssignment(assignment.id)}
+                          className="text-red-600 hover:text-red-800 font-medium text-sm transition-colors"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold text-black mb-2">
+                            Phẩm Vị <span className="text-red-600">*</span>
+                          </label>
+                          <select
+                            value={assignment.rankId}
+                            onChange={(e) => updateRankAssignment(assignment.id, "rankId", e.target.value)}
+                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${
+                              !assignment.rankId
+                                ? "border-gray-300 focus:border-black"
+                                : "border-green-500 focus:border-green-600"
+                            }`}
+                          >
+                            <option value="">Chọn phẩm vị</option>
+                            {ranks.map((rank) => (
+                              <option key={rank.id} value={rank.id}>
+                                {rank.displayName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-black mb-2">
+                            Quyết Định Số
+                          </label>
+                          <input
+                            type="text"
+                            value={assignment.decisionNumber}
+                            onChange={(e) => updateRankAssignment(assignment.id, "decisionNumber", e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                            placeholder="Vd: 123/QĐ"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-black mb-2">
+                            Ngày Quyết Định
+                          </label>
+                          <input
+                            type="text"
+                            value={assignment.decisionDate}
+                            onChange={(e) => updateRankAssignment(assignment.id, "decisionDate", e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+                            placeholder="dd/mm/yyyy"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Ghi chú */}

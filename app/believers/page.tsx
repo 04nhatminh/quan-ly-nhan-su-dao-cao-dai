@@ -143,7 +143,7 @@ export default function BelieversPage() {
     return matchesSearch && matchesRank;
   });
 
-  if (!mounted || loading) {
+  if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-2xl font-medium text-gray-600">Đang tải...</div>
@@ -225,7 +225,17 @@ export default function BelieversPage() {
             )}
           </div>
         ) : (
-          <div className="border-2 border-black rounded-lg overflow-hidden">
+          <div className="border-2 border-black rounded-lg overflow-hidden relative">
+            {loading && (
+              <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10 rounded-lg">
+                <div className="text-center">
+                  <div className="inline-block">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mb-2"></div>
+                    <p className="text-gray-600 font-medium">Đang tải...</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -236,11 +246,8 @@ export default function BelieversPage() {
                     >
                       Họ Tên{getSortIcon("fullName")}
                     </th>
-                    <th 
-                      onClick={() => handleSort("currentRank")}
-                      className="px-6 py-4 text-left font-bold cursor-pointer hover:bg-gray-900 transition-colors"
-                    >
-                      Phẩm Vị{getSortIcon("currentRank")}
+                    <th className="px-6 py-4 text-left font-bold">
+                      Phẩm Vị
                     </th>
                     <th 
                       onClick={() => handleSort("dateOfBirth")}

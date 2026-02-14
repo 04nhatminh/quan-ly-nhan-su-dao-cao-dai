@@ -13,16 +13,32 @@ const createBelieverSchema = z.object({
   hoDao: z.string().optional().nullable(),
   ngayNhapMon: z.string().optional().nullable(),
   ngayTamThanh: z.string().optional().nullable(),
-  traiKy: z.enum(['SIX_DAYS', 'TEN_DAYS', 'SIXTEEN_DAYS', 'FULL']).optional().nullable(),
-  tuChan: z.enum(['LINH', 'TRUONG', 'TAM', 'TBHC']).optional().nullable(),
+  traiKy: z
+    .string()
+    .transform(val => val === '' ? null : val)
+    .refine(val => val === null || ['SIX_DAYS', 'TEN_DAYS', 'SIXTEEN_DAYS', 'FULL'].includes(val), 'Giá trị không hợp lệ')
+    .optional()
+    .nullable(),
+  tuChan: z
+    .string()
+    .transform(val => val === '' ? null : val)
+    .refine(val => val === null || ['LINH', 'TRUONG', 'TAM', 'TBHC'].includes(val), 'Giá trị không hợp lệ')
+    .optional()
+    .nullable(),
   fatherName: z.string().optional().nullable(),
   motherName: z.string().optional().nullable(),
   ngayQuyLieu: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
-  rankId: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   email: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
+  rankAssignments: z.array(
+    z.object({
+      rankId: z.string().min(1, 'Phẩm vị là bắt buộc'),
+      decisionNumber: z.string().optional().nullable(),
+      decisionDate: z.string().optional().nullable(),
+    })
+  ).optional().default([]),
 });
 
 /**
@@ -53,7 +69,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
     
     // Các trường hợp lệ để sort
-    const validSortFields = ['fullName', 'dateOfBirth', 'gender', 'createdAt', 'updatedAt', 'currentRank'];
+    const validSortFields = ['fullName', 'dateOfBirth', 'gender', 'createdAt', 'updatedAt'];
     if (!validSortFields.includes(sortBy)) {
       sortBy = 'createdAt';
     }
@@ -74,51 +90,7 @@ export async function GET(request: NextRequest) {
     if (hoDao) where.hoDao = { contains: hoDao };
     if (xaDao) where.xaDao = { contains: xaDao };
     
-    // Nếu sort theo currentRank, cần fetch tất cả rồi sort trong memory
-    if (sortBy === 'currentRank') {
-      const allBelievers = await prisma.believer.findMany({
-        where,
-        include: {
-          rankAssignments: {
-            include: {
-              rank: true,
-            },
-            orderBy: {
-              decisionDate: 'desc',
-            },
-            take: 1,
-          },
-        },
-      });
-
-      // Sort theo displayName của current rank
-      allBelievers.sort((a, b) => {
-        const rankA = a.rankAssignments?.[0]?.rank?.displayName || '';
-        const rankB = b.rankAssignments?.[0]?.rank?.displayName || '';
-        
-        if (sortOrder === 'asc') {
-          return rankA.localeCompare(rankB, 'vi');
-        } else {
-          return rankB.localeCompare(rankA, 'vi');
-        }
-      });
-
-      // Apply pagination
-      const total = allBelievers.length;
-      const paginatedBelievers = allBelievers.slice(skip, skip + pageSize);
-
-      return NextResponse.json({
-        data: paginatedBelievers,
-        pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages: Math.ceil(total / pageSize),
-        },
-      });
-    }
-
-    // Build orderBy clause cho các trường khác
+    // Build orderBy clause
     const orderBy: any = {};
     orderBy[sortBy] = sortOrder;
     
@@ -213,16 +185,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create RankAssignment if rankId is provided
-    if (validated.rankId) {
-      await prisma.rankAssignment.create({
-        data: {
-          believerId: believer.id,
-          rankId: validated.rankId,
-          decisionDate: new Date(),
-          decisionNumber: '',
-        },
-      });
+    // Create RankAssignments if provided
+    if (validated.rankAssignments && validated.rankAssignments.length > 0) {
+      for (const rankAssignment of validated.rankAssignments) {
+        await prisma.rankAssignment.create({
+          data: {
+            believerId: believer.id,
+            rankId: rankAssignment.rankId,
+            decisionDate: rankAssignment.decisionDate ? new Date(rankAssignment.decisionDate) : null,
+            decisionNumber: rankAssignment.decisionNumber || '',
+          },
+        });
+      }
 
       // Fetch believer again to get updated rankAssignments
       return NextResponse.json(
